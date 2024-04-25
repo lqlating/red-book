@@ -6,7 +6,7 @@ import { ElMessage } from "element-plus";
 export const userInfoStore = defineStore('user', () => {
     const account = ref('');
     const password = ref('');
-    const isLogin = ref('false')
+    let isLogin = ref(false)
     const userThing = reactive({
         user: '',
         email: '',
@@ -28,16 +28,14 @@ export const userInfoStore = defineStore('user', () => {
                     account.value = '';
                     password.value = '';
                 } else {
-                    console.log(data.data);
+                    
                     ElMessage.success("登录成功");
-
                     // 使用Vue.set或者Object.assign修改userThing对象的属性
                     const { user, email, id, avatar } = data.data;
                     Object.assign(userThing, { user, email, id, avatar });
-                    console.log("test--", userThing);
                     account.value = '';
                     password.value = '';
-                    isLogin.value = !isLogin.value;
+                    isLogin.value = true;
                 }
             })
             .catch(error => {
@@ -48,5 +46,5 @@ export const userInfoStore = defineStore('user', () => {
             });
     };
 
-    return { password, account, submitLogin, userThing };
+    return { password, account, submitLogin, userThing,isLogin };
 });

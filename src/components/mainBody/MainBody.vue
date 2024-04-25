@@ -2,9 +2,12 @@
 import { RouterView, RouterLink } from 'vue-router';
 import Login from "../login/Login.vue";
 import { ref } from 'vue';
-
+import {userInfoStore} from "../../store/user"
+import { storeToRefs } from 'pinia';
+import Loged from '../loged/Loged.vue'
+const userStore = userInfoStore();
+const {isLogin,userThing} = storeToRefs(userStore);
 let showLogin = ref(false);
-
 const closeDialog = () => {
   showLogin.value = false;
 }
@@ -18,6 +21,7 @@ const updateShowLogin = (value) => {
     <div class="outer-overlay" v-if="showLogin"  @click="closeDialog">
       <div class="inner-overlay" @click.stop>
         <Login :showLogin="showLogin" class="Login" @update:showLogin="updateShowLogin"></Login>
+        
       </div>
     </div>
 
@@ -26,7 +30,9 @@ const updateShowLogin = (value) => {
         <RouterLink to="/Discover" active-class="active" class="my-txt"><span class="txt-inner"><img class="icon" src="../../assets/img/House.png">发现</span></RouterLink>
         <RouterLink to="/Publish" active-class="active" class="my-txt"><span class="txt-inner"><img class="icon" src="../../assets/img/shizikuang.png" alt="">发布</span></RouterLink>
         <RouterLink to="/Notify" active-class="active" class="my-txt"><span class="txt-inner"><img class="icon" src="../../assets/img/ringlingsheng.png" alt="">通知</span></RouterLink>
-        <div class="login" @click="showLogin = true">登录</div>
+        <RouterLink v-if="isLogin" to="/Me" active-class="active" class="my-txt"><span class="txt-inner"><img class="icon me" :src="userThing.avatar" alt=""> 我</span></RouterLink>
+        <div v-if="!isLogin" class="login" @click="showLogin = true">登录</div>
+        
       </div>
 
       <div class="main-content">
@@ -73,7 +79,10 @@ const updateShowLogin = (value) => {
   width: 20px;
   height: 20px;
 }
-
+.me{
+  border-radius: 50%;
+  
+}
 img {
   width: 100px;
   height: 100px;
@@ -101,8 +110,9 @@ img {
 }
 
 .my-txt {
+  font-weight: bold;
   padding-left: 10px;
-  font-size: 18.4px;
+  font-size: 16px;
   display: flex;
   align-items: center; /* 垂直居中 */
   height: 48px;
@@ -116,11 +126,11 @@ img {
   display: flex;
   align-items: center; /* 垂直居中 */
   height: 48px;
-  width: 209px;
+  width: 219px;
   border-radius: 20px;
   justify-content: center; /* 水平居中 */
   align-items: center; /* 垂直居中 */
-  font-size: 16px;
+  
   cursor: pointer;
   font-weight: bold;
 }

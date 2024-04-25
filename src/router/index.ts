@@ -2,6 +2,7 @@ import {createRouter,createWebHistory} from 'vue-router'
 import Discover from '../components/discover/Discover.vue'
 import Publish from '../components/Publish/Publish.vue'
 import Notify from '../components/Notify/Notify.vue'
+import Me from "../components/me/Me.vue"
 // import Dressing from '../components/best/Dressing.vue'
 // import Emotion from '../components/best/Emotion.vue'
 // import Filmtelevision from '../components/best/Filmtelevision.vue'
@@ -78,6 +79,10 @@ const router = createRouter({
         {
             path:'/Notify',
             component:Notify
+        },
+        {
+            path:'/Me',
+            component:Me
         }
     ]
 })
