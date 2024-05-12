@@ -10,7 +10,7 @@
 
       <span class="input-wrapper">
         <input type="text" class="input-box" placeholder="Search...">
-        <div class="search-icon"></div>
+        <div class="search-icon"><img class="search-img" src="../../assets/img/search.png" alt=""></div>
       </span>
 
       <span class="work-together">
@@ -68,12 +68,6 @@
 
 }
 
-.search-icon {
-  position: absolute;
-  right: 1;
-  top: 0;
-
-}
 
 .work-together {
   position: relative;
@@ -187,15 +181,16 @@
 
 .search-icon {
   position: absolute;
-  top: 50%;
+  top: 57%;
   right: 10px;
   transform: translateY(-50%);
   cursor: pointer;
 }
+.search-img{
+  height: 20px;
+  width: 20px;
+}
 
 /* 图标样式仅作示例，实际项目中可替换为合适的图标 */
-.search-icon::before {
-  content: '\1F50D';
-  /* 放大镜图标 */
-  font-size: 20px;
-}</style>
+
+</style>

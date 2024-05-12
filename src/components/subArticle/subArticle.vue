@@ -27,7 +27,6 @@ var publication_time = publication_time.value.substring(0,10)
 let comment_content = ref([])
 let comment_like_count = ref([])
 let comment_user_id = ref()
-
 async function getComment(){
   try{
     const res = await axios.get(`http://localhost:8080/getComment/${article_id.value}`)

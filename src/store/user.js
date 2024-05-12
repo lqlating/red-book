@@ -8,10 +8,14 @@ export const userInfoStore = defineStore('user', () => {
     const password = ref('');
     let isLogin = ref(false)
     const userThing = reactive({
-        user: '',
+        username: '',
         email: '',
         id: '',
         avatar: '',
+        subscript:'',
+        introduction:'',
+        gender:'',
+        fans:''
     });
 
     const submitLogin = () => {
@@ -31,8 +35,8 @@ export const userInfoStore = defineStore('user', () => {
                     
                     ElMessage.success("登录成功");
                     // 使用Vue.set或者Object.assign修改userThing对象的属性
-                    const { user, email, id, avatar } = data.data;
-                    Object.assign(userThing, { user, email, id, avatar });
+                    const { username, email, id, avatar,gender,introduction,fans,subscript } = data.data;
+                    Object.assign(userThing, { username, email, id, avatar,gender,introduction,fans,subscript });
                     account.value = '';
                     password.value = '';
                     isLogin.value = true;

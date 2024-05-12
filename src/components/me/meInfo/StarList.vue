@@ -1,11 +1,9 @@
-<script setup>
-
-</script>
 <template>
     <div>
-        myself
+        starList
     </div>
 </template>
+<script setup>
+</script>
 <style scoped>
-    
 </style>

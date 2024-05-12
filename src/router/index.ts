@@ -3,6 +3,9 @@ import Discover from '../components/discover/Discover.vue'
 import Publish from '../components/Publish/Publish.vue'
 import Notify from '../components/Notify/Notify.vue'
 import Me from "../components/me/Me.vue"
+import LikeList from "../components/me/meInfo/LikeList.vue"
+import Note from "../components/me/meInfo/Note.vue"
+import StarList from "../components/me/meInfo/StarList.vue"
 // import Dressing from '../components/best/Dressing.vue'
 // import Emotion from '../components/best/Emotion.vue'
 // import Filmtelevision from '../components/best/Filmtelevision.vue'
@@ -14,6 +17,8 @@ import Me from "../components/me/Me.vue"
 // import Travel from '../components/best/Travel.vue'
 // import WorkPlace from '../components/best/WorkPlace.vue'
 import Recommend from '../components/best/Recommend.vue'
+import { compact } from 'lodash-es'
+import component from 'element-plus/es/components/tree-select/src/tree-select-option.mjs'
 const router = createRouter({
     history:createWebHistory(),
     routes:[
@@ -82,7 +87,22 @@ const router = createRouter({
         },
         {
             path:'/Me',
-            component:Me
+            component:Me,
+            children:[
+                {
+                    path:'LikeList',
+                    component:LikeList
+                },
+                {
+                    path:'Note',
+                    component:Note
+                },
+                {
+                    path:'StarList',
+                    component:StarList
+                },
+                
+            ]
         }
     ]
 })
