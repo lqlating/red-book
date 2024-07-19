@@ -7,7 +7,7 @@ import { onMounted } from 'vue';
 const userStore = userInfoStore();
 const { userThing } = storeToRefs(userStore);
 const { username, email, id, avatar, gender, introduction, fans, subscript } = userThing.value;
-console.log(gender);
+
 
 const router = useRouter();
 
@@ -41,7 +41,7 @@ onMounted(() => {
     </span>
   </div>
 
-  <div>
+  <div class="output">
     <RouterView></RouterView>
   </div>
 </template>
@@ -64,9 +64,9 @@ a {
 
 .main-part {
   display: flex;
-  width: 693px;
+  width: 600.1px;
   height: 164px;
-  margin-left: 40%;
+  margin: 0 288.45px;
   padding: 48px 0;
 }
 
@@ -117,5 +117,15 @@ a {
   padding: 9px 16px;
   height: 40px;
   border-radius: 16px;
+}
+
+.output {
+  margin-left: 0px;
+  margin-top: 100px;
+  width: 1177px;
+  height: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

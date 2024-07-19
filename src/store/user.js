@@ -6,17 +6,24 @@ import { ElMessage } from "element-plus";
 export const userInfoStore = defineStore('user', () => {
     const account = ref('');
     const password = ref('');
-    let isLogin = ref(false)
+    let isLogin = ref(!!localStorage.getItem('userInfo'));
+    let showLogin = ref(false);
     const userThing = reactive({
         username: '',
         email: '',
         id: '',
         avatar: '',
-        subscript:'',
-        introduction:'',
-        gender:'',
-        fans:''
+        subscript: '',
+        introduction: '',
+        gender: '',
+        fans: ''
     });
+
+    // 从 localStorage 恢复用户信息
+    if (isLogin.value) {
+        const storedUserInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        Object.assign(userThing, storedUserInfo);
+    }
 
     const submitLogin = () => {
         const loginRequest = {
@@ -32,11 +39,11 @@ export const userInfoStore = defineStore('user', () => {
                     account.value = '';
                     password.value = '';
                 } else {
-                    
                     ElMessage.success("登录成功");
-                    // 使用Vue.set或者Object.assign修改userThing对象的属性
-                    const { username, email, id, avatar,gender,introduction,fans,subscript } = data.data;
-                    Object.assign(userThing, { username, email, id, avatar,gender,introduction,fans,subscript });
+                    // 更新 userThing 对象的属性并保存到 localStorage
+                    const { username, email, id, avatar, gender, introduction, fans, subscript } = data.data;
+                    Object.assign(userThing, { username, email, id, avatar, gender, introduction, fans, subscript });
+                    localStorage.setItem('userInfo', JSON.stringify(userThing));
                     account.value = '';
                     password.value = '';
                     isLogin.value = true;
@@ -50,5 +57,21 @@ export const userInfoStore = defineStore('user', () => {
             });
     };
 
-    return { password, account, submitLogin, userThing,isLogin };
+    const logout = () => {
+        isLogin.value = false;
+        Object.assign(userThing, {
+            username: '',
+            email: '',
+            id: '',
+            avatar: '',
+            subscript: '',
+            introduction: '',
+            gender: '',
+            fans: ''
+        });
+        localStorage.removeItem('userInfo');
+        ElMessage.success("登出成功");
+    };
+
+    return { password, account, submitLogin, userThing, isLogin, showLogin, logout };
 });

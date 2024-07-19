@@ -1,20 +1,25 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import axios from 'axios';
+import { userInfoStore } from '../../store/user';
+import { storeToRefs } from 'pinia';
 
-const props = defineProps(['commentCount', 'like_count', 'star_count', 'article_id','like']);
-// 使用 ref 创建响应式对象
-const like = ref(props.like)
-let star_result = ref(false)
+const { userThing } = storeToRefs(userInfoStore);
+const props = defineProps(['commentCount', 'like_count', 'star_count', 'article_id', 'like']);
 
+const like = ref(props.like);
+const star_result = ref(false);
 const like_count = ref(props.like_count);
 const star_count = ref(props.star_count);
 const article_id = props.article_id;
+const isEditing = ref(false); // 控制输入框状态
+const commentText = ref(''); // 绑定输入框内容
+
 function addLike() {
   axios.post(`http://localhost:8080/addLike/${article_id}`)
     .then(() => {
-      like_count.value++; // 更新 like_count 的值，触发响应式更新
-      like.value = !like.value
+      like_count.value++;
+      like.value = !like.value;
     })
     .catch(error => {
       console.error('点赞失败：', error);
@@ -24,57 +29,90 @@ function addLike() {
 function subLike() {
   axios.post(`http://localhost:8080/subLike/${article_id}`)
     .then(() => {
-      like_count.value--; // 更新 like_count 的值，触发响应式更新
-      like.value = !like.value
+      like_count.value--;
+      like.value = !like.value;
     })
     .catch(error => {
-      console.error('点赞失败：', error);
-    });;
+      console.error('取消点赞失败：', error);
+    });
 }
+
 function addStar() {
   axios.post(`http://localhost:8080/addStar/${article_id}`)
     .then(() => {
-      // 更新 ref 对象的值
-      star_count.value++; // 更新 star_count 的值，触发响应式更新
-      star_result.value = !star_result.value
+      star_count.value++;
+      star_result.value = !star_result.value;
     })
     .catch(error => {
-      console.error('点赞失败：', error);
+      console.error('收藏失败：', error);
     });
 }
 
 function subStar() {
   axios.post(`http://localhost:8080/subStar/${article_id}`)
     .then(() => {
-      // 更新 ref 对象的值
-      star_count.value--; // 更新 star_count 的值，触发响应式更新
-      star_result.value = !star_result.value
+      star_count.value--;
+      star_result.value = !star_result.value;
     })
     .catch(error => {
-      console.error('点赞失败：', error);
+      console.error('取消收藏失败：', error);
     });
 }
-// onMounted(()=>{
-//   console.log(props)
-// })
+
+function toggleEdit() {
+  isEditing.value = !isEditing.value;
+}
+
+function cancelEdit() {
+  isEditing.value = false;
+}
+
+function handleInput(event) {
+  commentText.value = event.target.value;
+}
 </script>
 
 <template>
   <div class="post-comment">
-    <input class="comment_place" type="text">
-    <div>
-      <img v-show="!like" @click="addLike" class="heart" src="../../assets/img/heart.png" alt="">
-      <img v-show="like" @click="subLike" class="red_heart" src="../../assets/img/red_heart.png" alt="">
-      <!-- <img v-show="!star_result" class="heart" src="../../assets/img/red_heart.png" alt=""> -->
-      <span class="down_thing">{{ like_count }}</span>
-    </div>
-    <div><img class="reply" src="../../assets/img/_ico_reply.png" alt=""><span class="down_thing">{{ props.commentCount
-        }}</span></div>
-    <div>
-      <img v-show="!star_result" @click="addStar" class="star" src="../../assets/img/star.png" alt="">
-      <img v-show="star_result" @click="subStar" class="star" src="../../assets/img/star_1.png" alt="">
-      <span class="down_thing">{{ star_count }}</span>
-    </div>
+    <input 
+      class="comment_place" 
+      placeholder="说点什么" 
+      type="text" 
+      v-model="commentText"
+      @input="handleInput"
+      @click="toggleEdit"
+    >
+    <transition name="fade">
+      <div v-if="!isEditing" class="icon-container">
+        <div>
+          <img v-show="!like" @click="addLike" class="heart" src="../../assets/img/heart.png" alt="">
+          <img v-show="like" @click="subLike" class="red_heart" src="../../assets/img/red_heart.png" alt="">
+          <span class="down_thing">{{ like_count }}</span>
+        </div>
+        <div>
+          <img v-show="!star_result" @click="addStar" class="star" src="../../assets/img/star.png" alt="">
+          <img v-show="star_result" @click="subStar" class="star" src="../../assets/img/star_1.png" alt="">
+          <span class="down_thing">{{ star_count }}</span>
+        </div>
+        <div>
+          <img class="reply" @click="toggleEdit" src="../../assets/img/_ico_reply.png" alt="">
+          <span class="down_thing">{{ props.commentCount }}</span>
+        </div>
+      </div>
+    </transition>
+    <transition name="fade">
+      <div v-if="isEditing" class="edit-container">
+        <span class="aite">@</span>
+        <button 
+          @click="toggleEdit" 
+          :class="{'disabled': commentText.length === 0}" 
+          class="go"
+        >
+          发送
+        </button>
+        <button @click="cancelEdit" class="cancel">取消</button>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -82,9 +120,11 @@ function subStar() {
 .post-comment {
   border-top: 0.1px solid rgb(232, 223, 223);
   height: 72.8px;
-  padding: 16px 16px 16px 0px;
+  padding: 0px 0px 0px 16px;
   display: flex;
-  justify-content: space-around;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
 }
 
 .comment_place {
@@ -96,6 +136,7 @@ function subStar() {
 }
 
 .down_thing {
+  font-weight: 500;
   margin-left: 4px;
   vertical-align: 5px;
   font-size: 14px;
@@ -105,24 +146,73 @@ function subStar() {
 .comment_place:focus {
   outline: none;
 }
-.heart{
-  width: 22px;
-  height: 20px;
-  margin-top: 10px;
-  margin-left: -40px;
+html .icon-container{
+  right: 33px;
 }
-.red_heart {
-  width: 22px;
-  height: 20px;
-  margin-top: 10px;
-  margin-left: -40px;
+.icon-container,
+.edit-container {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  right: 16px;
 }
 
+.icon-container div,
+.edit-container span,
+.edit-container button {
+  margin-left: 8px;
+}
+
+.heart,
+.red_heart,
 .reply,
 .star {
-  margin-left: -40px;
-  margin-top: 8px;
   width: 22px;
-  height: 22px;
+  height: 20px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.aite {
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.go,
+.cancel {
+  width: 64px;
+  height: 40px;
+  margin-right: 15px;
+  border-radius: 44px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.go {
+  font-weight: bold;
+  color: white;
+  background-color: #ff2442;
+  border: none;
+  font-size: 16px;
+}
+
+.go.disabled {
+  background-color: #ffd5db;
+}
+
+.cancel {
+  font-weight: bold;
+  font-size: 16px;
+  border: 0.5px solid #a8a5a5;
+  background-color: white;
+}
+
+/* 定义 fade 过渡效果 */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 </style>

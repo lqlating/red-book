@@ -4,78 +4,61 @@ import { onMounted, reactive, ref } from 'vue';
 import object from 'lodash-es/object';
 import Comment from '../comment/Comment.vue';
 import ReplyPart from '../comment/replyPart.vue';
-import { configProviderProps } from 'element-plus';
-let props = defineProps(['article'])
-let isHover = ref(false)
-// let { img_url, like_count, txt_type, author_id } = props.articles;
-let commentCount = ref()
-const title = ref(props.article.title)
+import { userInfoStore } from '../../store/user';
+import { storeToRefs } from 'pinia';
+
+const userStore = userInfoStore();
+const userThing = storeToRefs(userStore);
+const { showLogin } = storeToRefs(userStore);
+let props = defineProps(['article']);
+let isHover = ref(false);
+let commentCount = ref();
+const title = ref(props.article.title);
 const img_url = ref(props.article.img_url);
 let like_count = ref(props.article.like_count);
-let star_count = ref(props.article.star_count)
+let star_count = ref(props.article.star_count);
 const author_id = ref(props.article.author_id);
-const content = ref(props.article.content)
-const article_id = ref(props.article.article_id)
-var publication_time = ref(props.article.publication_time)
-const address = ref(props.article.address)
-let like = ref(false)
-let userInfo = reactive({})
-let userName = ref('')
-let avatar = ref('')
-let article_inner = ref(false)
-var publication_time = publication_time.value.substring(0,10)
-let comment_content = ref([])
-let comment_like_count = ref([])
-let comment_user_id = ref()
-async function getComment(){
-  try{
-    const res = await axios.get(`http://localhost:8080/getComment/${article_id.value}`)
-    comment_content.value = res.data.data
-    
-    // console.log(comment_content.value[0].user_id)
-    
-  }
+const content = ref(props.article.content);
+const article_id = ref(props.article.article_id);
+var publication_time = ref(props.article.publication_time);
+const address = ref(props.article.address);
+let like = ref(false);
+let userInfo = reactive({});
+let userName = ref('');
+let avatar = ref('');
+let article_inner = ref(false);
+publication_time = publication_time.value.substring(0, 10);
+let comment_content = ref([]);
 
-  catch(error){
-    console.error('获取评论失败:',error)
+async function getComment() {
+  try {
+    const res = await axios.get(`http://localhost:8080/getCommentBylikeCount/${article_id.value}`);
+    comment_content.value = res.data.data;
+  } catch (error) {
+    console.error('获取评论失败:', error);
   }
 }
+
 async function searchUserById(Author_id) {
   let res = await axios.get(`http://localhost:8080/SearchUserById/${Author_id}`);
-  object.assign(userInfo, res.data.data)
-  // console.log(res.data.data[0])
-  userName.value = userInfo[0].username
-  avatar.value = userInfo[0].avatar
-
+  object.assign(userInfo, res.data.data);
+  userName.value = userInfo[0].username;
+  avatar.value = userInfo[0].avatar;
 }
-// async function getCommentUsername(commentAuthor_id){
-//   let res = await axios.get(`http://localhost:8080/SearchUserById/${commentAuthor_id}`)
-//   let {username} = res.data.data[0]
-//   // console.log(username,"name")
-//   return username
-// }
-
-// async function getCommentAvatar(commentAuthor_id){
-//   let res = await axios.get(`http://localhost:8080/SearchUserById/${commentAuthor_id}`)
-//   let {avatar} = res.data.data[0]
-//   // console.log(avatar,"avatar")
-//   return avatar
-// }
 
 async function getCommentCount() {
   try {
     const res = await axios.get(`http://localhost:8080/getCommentCount/${article_id.value}`);
-    commentCount.value = res.data
-    
-    
+    commentCount.value = res.data;
   } catch (error) {
     console.error('获取评论数量失败：', error);
   }
 }
+
 function addLike() {
   axios.post(`http://localhost:8080/addLike/${article_id.value}`)
     .then(() => {
-      like_count.value++; // 更新 like_count 的值，触发响应式更新
+      like_count.value++;
     })
     .catch(error => {
       console.error('点赞失败：', error);
@@ -85,33 +68,40 @@ function addLike() {
 function subLike() {
   axios.post(`http://localhost:8080/subLike/${article_id.value}`)
     .then(() => {
-      like_count.value--; // 更新 like_count 的值，触发响应式更新
+      like_count.value--;
     })
     .catch(error => {
       console.error('点赞失败：', error);
-    });;
+    });
 }
-
 
 function likeThing() {
-  like.value = !like.value
+  like.value = !like.value;
 }
+
 function unlikeThing() {
-  like.value = !like.value
+  like.value = !like.value;
 }
 
-async function getCommentThing(){
-  article_inner.value = true
-  await getComment() // 等待评论内容获取完成
-  await getCommentCount() // 获取评论数量
-
+async function getCommentThing() {
+  article_inner.value = true;
+  await getComment();
+  await getCommentCount();
 }
+
+function subscribe(isLogin) {
+  if (!showLogin.value) {
+    showLogin.value = true;
+  } else {
+    console.log('sub');
+  }
+}
+
 onMounted(() => {
-  searchUserById(author_id.value)
-  
-})
-
+  searchUserById(author_id.value);
+});
 </script>
+
 <template>
   <div class="article-inner" v-show="article_inner">
     <span class="article_img_inner"><img :src="img_url" alt=""></span>
@@ -119,73 +109,59 @@ onMounted(() => {
       <div class="user-inner">
         <img :src="avatar" alt="">
         <span class="username-info">{{ userName }}</span>
-        <span class="subscribe">关注</span>
+        <span class="subscribe" @click="subscribe(userThing.isLogin.value)">关注</span>
       </div>
       <div class="article-comment">
         <div class="articleContent">
           <div class="inner-title">{{ title }}</div>
           <div class="inner-content">{{ content }}</div>
-          <div class="date">{{publication_time}}  {{address}}</div>
+          <div class="date">{{ publication_time }}  {{ address }}</div>
           <hr class="article-comment-hr">
-          <div class="comment_count">共 <span>{{commentCount}}</span> 条评论</div>
+          <div class="comment_count">共 <span>{{ commentCount }}</span> 条评论</div>
           <Comment class="subcomment" :comment="comment" v-for="comment in comment_content"></Comment>
+          <div class="end"> -THE END-</div>
         </div>
-        
       </div>
-      <ReplyPart :commentCount="commentCount" :like_count="like_count" :star_count="star_count" :article_id="article_id" :like="like"></ReplyPart>
+      <ReplyPart  :commentCount="commentCount" :like_count="like_count" :star_count="star_count" :article_id="article_id" :like="like"></ReplyPart>
     </span>
   </div>
   <div class="mask" v-show="article_inner" @click="article_inner = false"></div>
   <div class="content-item article-container">
-
     <div class="main-area" @click="getCommentThing()">
       <img class="img-area" :src="img_url" alt="">
-
-     
-      <div class="txt-area">
-        {{ title }}
-      </div>
+      <div class="txt-area">{{ title }}</div>
     </div>
-
     <div class="article-bottom">
-
       <div>
         <span class="userthing">
           <span class="avatar"><img class="userAvatar" :src="avatar"></span>
           <span class="username">{{ userName }}</span>
-          <span v-show="!like" @click="addLike"><img class="heart" @click="likeThing(like)"
-              src="../../assets/img/heart.png" alt=""></span>
-          <span v-show="like" @click="subLike"><img class="red_heart" @click="unlikeThing(like)"
-              src="../../assets/img/red_heart.png" alt=""></span>
+          <span v-show="!like" @click="addLike"><img class="heart" @click="likeThing(like)" src="../../assets/img/heart.png" alt=""></span>
+          <span v-show="like" @click="subLike"><img class="red_heart" @click="unlikeThing(like)" src="../../assets/img/red_heart.png" alt=""></span>
           <span class="likeCount">{{ like_count }}</span>
         </span>
-
       </div>
     </div>
-
   </div>
 </template>
+
 <style scoped>
 .content-item {
   width: 17%;
-  /* 每行放五个内容 */
-  /* 假设每个内容的高度为100px，根据实际情况调整 */
-  border: none;
-  box-sizing: border-box;
   margin: 5px;
-  /* 间距 */
   height: auto;
   display: inline-block;
   justify-content: center;
   margin-bottom: 20px;
 }
-.date{
+
+.date {
   font-size: 14px;
   color: #33333399;
   font-weight: 520;
 }
-.article-inner {
 
+.article-inner {
   display: flex;
   position: fixed;
   background-color: white;
@@ -198,18 +174,20 @@ onMounted(() => {
   border-radius: 20px;
   overflow: hidden;
 }
-.comment_count{
+
+.comment_count {
   margin-bottom: 10px;
   font-size: 14px;
   color: #33333399;
 }
+
 .article-inner .article_img_inner {
   width: 53%;
   height: 100%;
   border-right: 1px solid #f1eeee;
 }
 
-.article_img_inner+span {
+.article_img_inner + span {
   width: 47%;
 }
 
@@ -227,9 +205,7 @@ onMounted(() => {
   font-weight: bold;
   margin-bottom: 10px;
 }
-/* .subcomment{
-  margin-bottom: 10px;
-} */
+
 .inner-content {
   font-size: 16px;
   font-weight: 400;
@@ -264,20 +240,19 @@ onMounted(() => {
 .article-comment-hr {
   border: 0.0001px solid rgb(236, 233, 233);
 }
+
 .article-comment::-webkit-scrollbar {
-    display: none; /* 隐藏滚动条 */
+  display: none;
 }
 
-.article-comment{
-  
-  height:439.2px;
+.article-comment {
+  height: 439.2px;
   overflow: auto;
-  
 }
+
 .user-inner {
   display: flex;
   align-items: center;
-  /* 垂直居中 */
 }
 
 .subscribe {
@@ -303,9 +278,7 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   background-color: rgba(31, 29, 29, 0.5);
-  /* 使用 rgba() 函数设置颜色和透明度 */
   z-index: 9999;
-  /* 为了确保遮罩层在页面的最顶层 */
 }
 
 .main-area {
@@ -321,14 +294,11 @@ onMounted(() => {
   margin-left: -12px;
   margin-bottom: 5px;
   color: #555555;
-  /* 淡灰色 */
 }
 
 .img-area {
   border-radius: 25px;
   height: 280px;
-
-
 }
 
 .article-bottom {
@@ -336,29 +306,21 @@ onMounted(() => {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  /* 垂直居中 */
 }
 
 .userthing {
   display: flex;
-  /* 或其他显示属性，但不要使用 display: block; */
   align-items: center;
-  /* 垂直居中 */
   margin-right: 10px;
-  /* 调整用户信息和点赞数之间的间距 */
   font-size: 13.8px;
   justify-content: space-between;
 }
 
 .username {
   max-width: 118px;
-  /* 设置最大宽度为 118px */
   white-space: nowrap;
-  /* 不换行 */
   overflow: hidden;
-  /* 超出部分隐藏 */
   text-overflow: ellipsis;
-  /* 超出部分显示省略号 */
   margin-right: 10px;
   width: 100px;
 }
@@ -395,4 +357,11 @@ onMounted(() => {
 .backImg {
   height: 100%;
   width: 100%;
-}</style>
+}
+
+.end {
+  color: #33333399;
+  font-size: 12px;
+  margin: 10px 150px;
+}
+</style>
