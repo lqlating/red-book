@@ -67,22 +67,21 @@ onMounted(() => {
   searchUserById(comment.user_id);
   getsubCommentCount(comment.comment_id);
   getsubComments(comment.comment_id);
-  if(grandparent_id){
-    getuserbyCommentid(comment.parent_id); // 添加这一行
+  if (grandparent_id) {
+    getuserbyCommentid(comment.comment_id);
   }
-  
 });
 </script>
 
 <template>
-  <div :class="['main-area', { subcomment: grandparent_id }]">
+  <div :class="['main-area', { subcomment: grandparent_id }]" v-bind="$attrs">
     <div class="img-wrapper">
       <img :src="avatar" :style="{ width: grandparent_id ? '24px' : '40px', height: grandparent_id ? '24px' : '40px' }" alt="">
     </div>
     <div class="content-wrapper">
       <div class="username">{{ userName }}</div>
       <div class="content">
-        <span v-if="grandparent_id || parent_id != grandparent_id">回复 <span class="replyedUsername">{{ subCommentUserName }}</span>: </span>{{ comment.content }}
+        <span v-if="grandparent_id || parent_id != grandparent_id">回复 {{ subCommentUserName }}:</span>{{ comment.content }}
       </div>
       <div class="publish_date">{{ comment.publish_time }}</div>
       <div class="icons">
@@ -107,6 +106,7 @@ onMounted(() => {
       :comment="subComment"
       :article_id="article_id"
       :grandparent_id="comment.comment_id"
+      v-bind="$attrs"
     />
   </div>
 </template>
@@ -212,8 +212,5 @@ button img {
 
 .sub-comment-item {
   margin-top: 10px; /* 添加子评论之间的边距 */
-}
-.replyedUsername{
-  color: #33333399;
 }
 </style>
