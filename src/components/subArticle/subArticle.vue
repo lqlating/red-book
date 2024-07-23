@@ -118,7 +118,7 @@ onMounted(() => {
           <div class="date">{{ publication_time }}  {{ address }}</div>
           <hr class="article-comment-hr">
           <div class="comment_count">共 <span>{{ commentCount }}</span> 条评论</div>
-          <Comment class="subcomment" :comment="comment" v-for="comment in comment_content"></Comment>
+          <Comment class="subcomment" :comment="comment" v-for="comment in comment_content" :article_id="article_id"></Comment>
           <div class="end"> -THE END-</div>
         </div>
       </div>
