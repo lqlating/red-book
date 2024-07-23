@@ -1,72 +1,113 @@
 <script setup>
-import axios from 'axios';
 import { ref, onMounted, reactive } from 'vue';
+import axios from 'axios';
 
-let props = defineProps(['comment','article_id']);
-let userName = ref('');
-let avatar = ref('');
-let subCommentCount = ref('')
-const { publish_time: publish_time, like_count: like_count, content: comment_content, user_id: userId,comment_id:comment_id } = props.comment;
-// const {article_id:aritcle_id} = props.article_id
-let userInfo = reactive({});
-let isLiked = ref(false);
-let localLikeCount = ref(like_count);
+// 设置属性并定义需要的变量
+const props = defineProps(['comment', 'article_id', 'grandparent_id', 'parent_id']);
+const { comment, article_id, grandparent_id, parent_id } = props;
+const userName = ref('');
+const avatar = ref('');
+const subCommentCount = ref('');
+const isLiked = ref(false);
+const localLikeCount = ref(comment.like_count);
+const userInfo = reactive({});
+const subComments = ref([]);
+const subCommentUserName = ref('');
 
-async function getsubCommentCount(commentid){
-  let res = await axios.get(`http://localhost:8080/getReplyCountByCommentId/${commentid}`);
-  subCommentCount.value = res.data.data;
-}
-async function searchUserById(Author_id) {
+const getuserbyCommentid = async (comment_id) => {
+  if (grandparent_id) {
+    try {
+      const res = await axios.get(`http://localhost:8080/getUserByCommentId/${comment_id}`);
+      subCommentUserName.value = res.data.data[0].username;
+    } catch (error) {
+      console.error('加载用户信息失败:', error);
+    }
+  }
+};
+
+const getsubCommentCount = async (parent_id) => {
+  if (!grandparent_id) {
+    try {
+      const res = await axios.get(`http://localhost:8080/getCommentCountByParentId/${parent_id}`);
+      subCommentCount.value = res.data.data;
+    } catch (error) {
+      console.error('加载子评论数量失败:', error);
+    }
+  }
+};
+
+const getsubComments = async (parent_id) => {
+  if (!grandparent_id) {
+    try {
+      const res = await axios.get(`http://localhost:8080/getCommentsByParentId/${parent_id}`);
+      subComments.value = res.data.data;
+    } catch (error) {
+      console.error('获取子评论失败:', error);
+    }
+  }
+};
+
+const searchUserById = async (userId) => {
   try {
-    let res = await axios.get(`http://localhost:8080/SearchUserById/${Author_id}`);
+    const res = await axios.get(`http://localhost:8080/SearchUserById/${userId}`);
     Object.assign(userInfo, res.data.data);
     userName.value = userInfo[0].username;
     avatar.value = userInfo[0].avatar;
-    
   } catch (error) {
     console.error('搜索用户失败：', error);
   }
-}
+};
 
-function toggleLike() {
+const toggleLike = () => {
   isLiked.value = !isLiked.value;
   localLikeCount.value += isLiked.value ? 1 : -1;
-}
-
-function reply() {
-  // 处理回复逻辑
-}
+};
 
 onMounted(() => {
-  searchUserById(userId);
-  getsubCommentCount(comment_id);
-  console.log(comment_id,props.article_id)
+  searchUserById(comment.user_id);
+  getsubCommentCount(comment.comment_id);
+  getsubComments(comment.comment_id);
+  if(grandparent_id){
+    getuserbyCommentid(comment.parent_id); // 添加这一行
+  }
+  
 });
 </script>
 
 <template>
-  <div class="main-area">
-    <div class="img-wrapper"><img :src="avatar" alt=""></div>
+  <div :class="['main-area', { subcomment: grandparent_id }]">
+    <div class="img-wrapper">
+      <img :src="avatar" :style="{ width: grandparent_id ? '24px' : '40px', height: grandparent_id ? '24px' : '40px' }" alt="">
+    </div>
     <div class="content-wrapper">
       <div class="username">{{ userName }}</div>
-      <div class="content">{{ comment_content }}</div>
-      <div class="publish_date">{{ publish_time }}</div>
+      <div class="content">
+        <span v-if="grandparent_id || parent_id != grandparent_id">回复 <span class="replyedUsername">{{ subCommentUserName }}</span>: </span>{{ comment.content }}
+      </div>
+      <div class="publish_date">{{ comment.publish_time }}</div>
       <div class="icons">
         <button class="like" @click="toggleLike">
           <img v-show="!isLiked" class="heart" src="../../assets/img/heart.png" alt="未点赞">
           <img v-show="isLiked" class="heart" src="../../assets/img/red_heart.png" alt="已点赞">
           <span v-show="localLikeCount != 0">{{ localLikeCount }}</span>
-          <span v-show="localLikeCount==0">赞</span>
-          
+          <span v-show="localLikeCount == 0">赞</span>
         </button>
         <button class="reply-part" @click="reply">
           <img class="reply" src="../../assets/img/_ico_reply.png" alt="回复">
-          <span class="commentCount" v-show="subCommentCount!=0">{{subCommentCount}}</span>
-          <span class="commentCount" v-show="subCommentCount==0">评论
-          </span>
+          <span class="commentCount" v-show="subCommentCount != 0">{{ subCommentCount }}</span>
+          <span class="commentCount" v-show="subCommentCount == 0 || grandparent_id">回复</span>
         </button>
       </div>
     </div>
+  </div>
+  <div v-if="subComments.length > 0" class="sub-comments">
+    <Comment
+      v-for="subComment in subComments"
+      :key="subComment.comment_id"
+      :comment="subComment"
+      :article_id="article_id"
+      :grandparent_id="comment.comment_id"
+    />
   </div>
 </template>
 
@@ -75,15 +116,15 @@ onMounted(() => {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  width: 100%;
+  margin-bottom: 20px; /* 添加底部边距 */
 }
 
 .img-wrapper {
-  width: 40px;
+  flex-shrink: 0;
 }
 
 .img-wrapper img {
-  width: 100%;
-  height: auto;
   border-radius: 50%;
 }
 
@@ -111,10 +152,6 @@ onMounted(() => {
   color: #33333399;
 }
 
-.main-area {
-  margin-bottom: 20px;
-}
-
 .icons {
   display: flex;
   align-items: center;
@@ -135,27 +172,48 @@ button img {
   height: 20px;
   margin-right: 5px;
 }
-.like{
+
+.like {
   color: #333333cc;
   font-weight: 500;
   font-size: 12px;
 }
-.heart{
-  
+
+.heart {
   width: 15px;
   height: 15px;
 }
-.reply{
+
+.reply {
   width: 16px;
   height: 16px;
 }
-.reply-part{
+
+.reply-part {
   margin-left: -10px;
   font-weight: 500;
   color: #333333cc;
   font-size: 12px;
 }
-.commentCount{
-  margin-left: -3px
+
+.commentCount {
+  margin-left: -2px;
+}
+
+.subcomment .content-wrapper {
+  max-width: 90%; /* 更改为90%以确保与父评论一致 */
+}
+
+.sub-comments {
+  margin-left: 40px; /* 调整为40px以匹配父评论的布局 */
+  margin-top: 10px; /* 添加顶部边距 */
+  margin-bottom: 20px; /* 添加底部边距 */
+}
+
+.sub-comment-item {
+  margin-top: 10px; /* 添加子评论之间的边距 */
+}
+.replyedUsername{
+  color: #33333399;
 }
 </style>
