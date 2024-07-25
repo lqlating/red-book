@@ -3,10 +3,13 @@ import { ref } from 'vue';
 import axios from 'axios';
 import { userInfoStore } from '../../store/user';
 import { storeToRefs } from 'pinia';
-
-const { userThing } = storeToRefs(userInfoStore);
+const userStore = userInfoStore();
+// const {id} = storeToRefs(userStore.userThing)
+// console.log(id)
+let user_id = ref(userStore.userThing.id)
+// console.log(user_id.value)
 const props = defineProps(['commentCount', 'like_count', 'star_count', 'article_id', 'like']);
-
+// const {id:user_id} = storeToRefs(userThing)
 const like = ref(props.like);
 const star_result = ref(false);
 const like_count = ref(props.like_count);

@@ -1,10 +1,14 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue';
 import axios from 'axios';
-
+import { userInfoStore } from '../../store/user';
+import { storeToRefs } from 'pinia';
+const userStore = userInfoStore()
+const user_id = ref(userStore.userThing.id);
+// console.log(user_id.value)
 // 设置属性并定义需要的变量
-const props = defineProps(['comment', 'article_id', 'grandparent_id', 'parent_id']);
-const { comment, article_id, grandparent_id, parent_id } = props;
+const props = defineProps(['comment', 'article_id', 'grandparent_id']);
+const { comment, article_id, grandparent_id} = props;
 const userName = ref('');
 const avatar = ref('');
 const subCommentCount = ref('');
@@ -14,21 +18,22 @@ const userInfo = reactive({});
 const subComments = ref([]);
 const subCommentUserName = ref('');
 
-const getuserbyCommentid = async (comment_id) => {
+const getuserbyCommentid = async (c_id) => {
   if (grandparent_id) {
     try {
-      const res = await axios.get(`http://localhost:8080/getUserByCommentId/${comment_id}`);
+      const res = await axios.get(`http://localhost:8080/getUserByCommentId/${c_id}`);
       subCommentUserName.value = res.data.data[0].username;
+      
     } catch (error) {
       console.error('加载用户信息失败:', error);
     }
   }
 };
 
-const getsubCommentCount = async (parent_id) => {
+const getsubCommentCount = async (p_id) => {
   if (!grandparent_id) {
     try {
-      const res = await axios.get(`http://localhost:8080/getCommentCountByParentId/${parent_id}`);
+      const res = await axios.get(`http://localhost:8080/getCommentCountByParentId/${p_id}`);
       subCommentCount.value = res.data.data;
     } catch (error) {
       console.error('加载子评论数量失败:', error);
@@ -36,10 +41,10 @@ const getsubCommentCount = async (parent_id) => {
   }
 };
 
-const getsubComments = async (parent_id) => {
+const getsubComments = async (p_id) => {
   if (!grandparent_id) {
     try {
-      const res = await axios.get(`http://localhost:8080/getCommentsByParentId/${parent_id}`);
+      const res = await axios.get(`http://localhost:8080/getCommentsByParentId/${p_id}`);
       subComments.value = res.data.data;
     } catch (error) {
       console.error('获取子评论失败:', error);
@@ -66,10 +71,17 @@ const toggleLike = () => {
 onMounted(() => {
   searchUserById(comment.user_id);
   getsubCommentCount(comment.comment_id);
-  getsubComments(comment.comment_id);
-  if (grandparent_id) {
-    getuserbyCommentid(comment.comment_id);
+  if(!grandparent_id){
+    getsubComments(comment.comment_id);
+    
   }
+  
+  if (grandparent_id) {
+    getuserbyCommentid(comment.parent_id);
+    // console.log(comment.parent_id,grandparent_id,props.comment)
+    // console.log(subComments.value);
+  }
+  
 });
 </script>
 
@@ -81,7 +93,14 @@ onMounted(() => {
     <div class="content-wrapper">
       <div class="username">{{ userName }}</div>
       <div class="content">
-        <span v-if="grandparent_id || parent_id != grandparent_id">回复 {{ subCommentUserName }}:</span>{{ comment.content }}
+        <span v-if="grandparent_id && comment.parent_id != grandparent_id">
+          
+          回复 
+          
+        <span class="subCommentUserName">{{ subCommentUserName }}</span>:
+
+        </span>{{ comment.content }}
+
       </div>
       <div class="publish_date">{{ comment.publish_time }}</div>
       <div class="icons">
@@ -212,5 +231,8 @@ button img {
 
 .sub-comment-item {
   margin-top: 10px; /* 添加子评论之间的边距 */
+}
+.subCommentUserName{
+  color: #33333399;
 }
 </style>

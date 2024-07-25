@@ -29,7 +29,6 @@ let avatar = ref('');
 let article_inner = ref(false);
 publication_time = publication_time.value.substring(0, 10);
 let comment_content = ref([]);
-
 async function getComment() {
   try {
     const res = await axios.get(`http://localhost:8080/getCommentBylikeCount/${article_id.value}`);
@@ -42,6 +41,7 @@ async function getComment() {
 async function searchUserById(Author_id) {
   let res = await axios.get(`http://localhost:8080/SearchUserById/${Author_id}`);
   object.assign(userInfo, res.data.data);
+  
   userName.value = userInfo[0].username;
   avatar.value = userInfo[0].avatar;
 }
