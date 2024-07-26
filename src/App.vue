@@ -25,7 +25,4 @@ import MainBody from './components/mainBody/MainBody.vue'
     padding: 0;
     box-sizing: border-box;
 }
-
-
-
 </style>

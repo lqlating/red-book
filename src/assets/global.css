@@ -1,0 +1,4 @@
+/* global.css */
+.el-message {
+    z-index: 999999999999 !important;
+  }

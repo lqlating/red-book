@@ -3,12 +3,14 @@ import { ref, onMounted, reactive } from 'vue';
 import axios from 'axios';
 import { userInfoStore } from '../../store/user';
 import { storeToRefs } from 'pinia';
-const userStore = userInfoStore()
+
+const userStore = userInfoStore();
 const user_id = ref(userStore.userThing.id);
-// console.log(user_id.value)
+
 // 设置属性并定义需要的变量
 const props = defineProps(['comment', 'article_id', 'grandparent_id']);
-const { comment, article_id, grandparent_id} = props;
+const { comment, article_id, grandparent_id } = props;
+
 const userName = ref('');
 const avatar = ref('');
 const subCommentCount = ref('');
@@ -16,6 +18,9 @@ const isLiked = ref(false);
 const localLikeCount = ref(comment.like_count);
 const userInfo = reactive({});
 const subComments = ref([]);
+const visibleSubComments = ref([]);
+const showMoreButtonText = ref('');
+
 const subCommentUserName = ref('');
 
 const getuserbyCommentid = async (c_id) => {
@@ -23,7 +28,6 @@ const getuserbyCommentid = async (c_id) => {
     try {
       const res = await axios.get(`http://localhost:8080/getUserByCommentId/${c_id}`);
       subCommentUserName.value = res.data.data[0].username;
-      
     } catch (error) {
       console.error('加载用户信息失败:', error);
     }
@@ -35,6 +39,7 @@ const getsubCommentCount = async (p_id) => {
     try {
       const res = await axios.get(`http://localhost:8080/getCommentCountByParentId/${p_id}`);
       subCommentCount.value = res.data.data;
+      showMoreButtonText.value = `展开${subCommentCount.value - 1}条回复`;
     } catch (error) {
       console.error('加载子评论数量失败:', error);
     }
@@ -46,6 +51,7 @@ const getsubComments = async (p_id) => {
     try {
       const res = await axios.get(`http://localhost:8080/getCommentsByParentId/${p_id}`);
       subComments.value = res.data.data;
+      visibleSubComments.value = subComments.value.slice(0, 1);
     } catch (error) {
       console.error('获取子评论失败:', error);
     }
@@ -68,20 +74,30 @@ const toggleLike = () => {
   localLikeCount.value += isLiked.value ? 1 : -1;
 };
 
+const showMoreReplies = () => {
+  const currentlyVisible = visibleSubComments.value.length;
+  if (currentlyVisible === 1) {
+    visibleSubComments.value = subComments.value.slice(0, 6);
+    showMoreButtonText.value = "展开更多回复";
+  } else {
+    visibleSubComments.value = subComments.value;
+    showMoreButtonText.value = "";
+  }
+  if (visibleSubComments.value.length === subComments.value.length) {
+    showMoreButtonText.value = "";
+  }
+};
+
 onMounted(() => {
   searchUserById(comment.user_id);
   getsubCommentCount(comment.comment_id);
-  if(!grandparent_id){
+  if (!grandparent_id) {
     getsubComments(comment.comment_id);
-    
   }
-  
+
   if (grandparent_id) {
     getuserbyCommentid(comment.parent_id);
-    // console.log(comment.parent_id,grandparent_id,props.comment)
-    // console.log(subComments.value);
   }
-  
 });
 </script>
 
@@ -94,13 +110,9 @@ onMounted(() => {
       <div class="username">{{ userName }}</div>
       <div class="content">
         <span v-if="grandparent_id && comment.parent_id != grandparent_id">
-          
-          回复 
-          
-        <span class="subCommentUserName">{{ subCommentUserName }}</span>:
-
+          回复
+          <span class="subCommentUserName">{{ subCommentUserName }}</span>:
         </span>{{ comment.content }}
-
       </div>
       <div class="publish_date">{{ comment.publish_time }}</div>
       <div class="icons">
@@ -118,15 +130,16 @@ onMounted(() => {
       </div>
     </div>
   </div>
-  <div v-if="subComments.length > 0" class="sub-comments">
+  <div v-if="visibleSubComments.length > 0" class="sub-comments">
     <Comment
-      v-for="subComment in subComments"
+      v-for="subComment in visibleSubComments"
       :key="subComment.comment_id"
       :comment="subComment"
       :article_id="article_id"
       :grandparent_id="comment.comment_id"
       v-bind="$attrs"
     />
+    <button v-if="showMoreButtonText" class="show-more" @click="showMoreReplies">{{ showMoreButtonText }}</button>
   </div>
 </template>
 
@@ -232,7 +245,19 @@ button img {
 .sub-comment-item {
   margin-top: 10px; /* 添加子评论之间的边距 */
 }
+
 .subCommentUserName{
   color: #33333399;
+}
+
+.show-more {
+  font-size: 14px;
+  color: #13386c;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left; /* 更改为left，以使其与点赞按钮左端对齐 */
+  display: block;
+  margin-left: 32px; /* 确保与点赞按钮左端对齐 */
 }
 </style>

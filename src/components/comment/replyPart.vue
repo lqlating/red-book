@@ -2,14 +2,11 @@
 import { ref } from 'vue';
 import axios from 'axios';
 import { userInfoStore } from '../../store/user';
-import { storeToRefs } from 'pinia';
+import { ElMessage } from 'element-plus';  // 引入 Element UI 的消息提示组件
+
 const userStore = userInfoStore();
-// const {id} = storeToRefs(userStore.userThing)
-// console.log(id)
-let user_id = ref(userStore.userThing.id)
-// console.log(user_id.value)
-const props = defineProps(['commentCount', 'like_count', 'star_count', 'article_id', 'like']);
-// const {id:user_id} = storeToRefs(userThing)
+const user_id = ref(userStore.userThing.id);
+const props = defineProps(['commentCount', 'like_count', 'star_count', 'article_id', 'like', 'comments']);  // 增加一个 props 用于传递评论数据
 const like = ref(props.like);
 const star_result = ref(false);
 const like_count = ref(props.like_count);
@@ -17,6 +14,29 @@ const star_count = ref(props.star_count);
 const article_id = props.article_id;
 const isEditing = ref(false); // 控制输入框状态
 const commentText = ref(''); // 绑定输入框内容
+async function submitComment() {
+  try {
+    const response = await axios.post('http://localhost:8080/addComment', {
+      content: commentText.value,
+      article_id: article_id,
+      user_id: user_id.value,
+      parent_id: null
+    });
+    if (response.data.code === 1) {
+      ElMessage.success('评论添加成功');  // 成功信息提示框
+      // 清空输入框
+      commentText.value = '';
+      // 切换回初始状态
+      isEditing.value = false;
+    } else {
+      ElMessage.error(`评论添加失败: ${response.data.msg}`);  // 失败信息提示框
+    }
+  } catch (error) {
+    console.error('评论添加失败:', error);
+    ElMessage.error('评论添加失败，请稍后重试');  // 错误信息提示框
+  }
+}
+
 
 function addLike() {
   axios.post(`http://localhost:8080/addLike/${article_id}`)
@@ -69,10 +89,6 @@ function toggleEdit() {
 function cancelEdit() {
   isEditing.value = false;
 }
-
-function handleInput(event) {
-  commentText.value = event.target.value;
-}
 </script>
 
 <template>
@@ -82,7 +98,6 @@ function handleInput(event) {
       placeholder="说点什么" 
       type="text" 
       v-model="commentText"
-      @input="handleInput"
       @click="toggleEdit"
     >
     <transition name="fade">
@@ -107,7 +122,7 @@ function handleInput(event) {
       <div v-if="isEditing" class="edit-container">
         <span class="aite">@</span>
         <button 
-          @click="toggleEdit" 
+          @click="submitComment" 
           :class="{'disabled': commentText.length === 0}" 
           class="go"
         >
@@ -149,9 +164,11 @@ function handleInput(event) {
 .comment_place:focus {
   outline: none;
 }
-html .icon-container{
+
+.icon-container {
   right: 33px;
 }
+
 .icon-container,
 .edit-container {
   display: flex;
@@ -217,5 +234,10 @@ html .icon-container{
 }
 .fade-enter-from, .fade-leave-to {
   opacity: 0;
+}
+
+/* 全局样式 */
+:deep(.el-message) {
+  z-index: 9999 !important;
 }
 </style>
