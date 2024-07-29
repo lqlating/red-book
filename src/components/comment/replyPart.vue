@@ -159,9 +159,6 @@ function cancelEdit() {
   outline: none;
 }
 
-.icon-container {
-  right: 33px;
-}
 
 .icon-container,
 .edit-container {
@@ -169,6 +166,11 @@ function cancelEdit() {
   align-items: center;
   position: absolute;
   right: 16px;
+}
+
+.icon-container {
+  
+  right: 33px;
 }
 
 .icon-container div,
