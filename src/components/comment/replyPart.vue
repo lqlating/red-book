@@ -38,6 +38,7 @@ async function submitComment() {
 }
 
 
+
 function addLike() {
   axios.post(`http://localhost:8080/addLike/${article_id}`)
     .then(() => {
