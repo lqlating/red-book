@@ -14,7 +14,6 @@ const { getComments, commentsByArticleId } = commentStore;
 const userStore = userInfoStore();
 const userThing = storeToRefs(userStore);
 const { showLogin } = storeToRefs(userStore);
-
 let props = defineProps(['article']);
 let isHover = ref(false);
 let commentCount = ref();
