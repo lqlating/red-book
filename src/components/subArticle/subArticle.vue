@@ -37,6 +37,7 @@ const comment_content = computed(() => commentsByArticleId[article_id.value] || 
 
 async function newgetComment() {
   await getComments(article_id.value);
+  
 }
 
 async function searchUserById(Author_id) {

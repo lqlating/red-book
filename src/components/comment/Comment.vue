@@ -2,7 +2,6 @@
 import { ref, onMounted, reactive } from 'vue';
 import axios from 'axios';
 import { userInfoStore } from '../../store/user';
-import { storeToRefs } from 'pinia';
 
 const userStore = userInfoStore();
 const user_id = ref(userStore.userThing.id);
@@ -13,7 +12,7 @@ const { comment, article_id, grandparent_id } = props;
 
 const userName = ref('');
 const avatar = ref('');
-const subCommentCount = ref('');
+const subCommentCount = ref(0);
 const isLiked = ref(false);
 const localLikeCount = ref(comment.like_count);
 const userInfo = reactive({});
@@ -39,7 +38,9 @@ const getsubCommentCount = async (p_id) => {
     try {
       const res = await axios.get(`http://localhost:8080/getCommentCountByParentId/${p_id}`);
       subCommentCount.value = res.data.data;
-      showMoreButtonText.value = `展开${subCommentCount.value - 1}条回复`;
+      if (subCommentCount.value > 1) {
+        showMoreButtonText.value = `展开${subCommentCount.value - 1}条回复`;
+      }
     } catch (error) {
       console.error('加载子评论数量失败:', error);
     }

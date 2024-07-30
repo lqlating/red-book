@@ -87,9 +87,10 @@ function cancelEdit() {
 
 <template>
   <div class="post-comment">
+    
     <input 
       class="comment_place" 
-      placeholder="说点什么" 
+      placeholder="说点什么..." 
       type="text" 
       v-model="commentText"
       @click="toggleEdit"
@@ -132,6 +133,7 @@ function cancelEdit() {
 .post-comment {
   border-top: 0.1px solid rgb(232, 223, 223);
   height: 72.8px;
+  /* height:700px; */
   padding: 0px 0px 0px 16px;
   display: flex;
   align-items: center;
@@ -145,7 +147,11 @@ function cancelEdit() {
   height: 40px;
   background-color: #f3f3f3;
   border: none;
+  text-indent: 16px;
 }
+/* .comment_place::placeholder{
+  padding-left: 10px;
+} */
 
 .down_thing {
   font-weight: 500;
