@@ -4,9 +4,13 @@ import axios from 'axios';
 import { userInfoStore } from '../../store/user';
 import { ElMessage } from 'element-plus';  // 引入 Element UI 的消息提示组件
 import { commentInfoStore } from '../../store/comment';
+import { editInfoStore } from '../../store/isEdit';
+import { storeToRefs } from 'pinia';
 
+const editStore = editInfoStore();
+const { isEditing } = storeToRefs(editStore);
 const commentStore = commentInfoStore();
-const { submitComment } = commentStore;
+const { submitComment, submitSubComment, tempSubComment, grandparent_id } = commentStore;
 const userStore = userInfoStore();
 const user_id = ref(userStore.userThing.id);
 const props = defineProps(['commentCount', 'like_count', 'star_count', 'article_id', 'like', 'comments']);
@@ -15,7 +19,6 @@ const star_result = ref(false);
 const like_count = ref(props.like_count);
 const star_count = ref(props.star_count);
 const article_id = props.article_id;
-const isEditing = ref(false); // 控制输入框状态
 const commentText = ref(''); // 绑定输入框内容
 const comment = reactive({}); // 定义为空对象
 
@@ -24,10 +27,22 @@ async function newsubmitComment() {
     content: commentText.value,
     article_id: article_id,
     user_id: user_id.value,
-    parent_id: null
+    // parent_id: null
   });
 
   await submitComment(comment);
+  commentText.value = '';
+  isEditing.value = false; // 切换回初始状态
+}
+
+async function newSubmitSubComment() {
+  Object.assign(tempSubComment, {
+    content: commentText.value,
+    article_id: article_id,
+    user_id: user_id.value,
+    // parent_id: props.parent_id,
+  });
+  await submitSubComment();
   commentText.value = '';
   isEditing.value = false; // 切换回初始状态
 }
@@ -83,17 +98,20 @@ function toggleEdit() {
 function cancelEdit() {
   isEditing.value = false;
 }
+
+function openEdit() {
+  isEditing.value = true;
+}
 </script>
 
 <template>
   <div class="post-comment">
-    
     <input 
       class="comment_place" 
       placeholder="说点什么..." 
       type="text" 
       v-model="commentText"
-      @click="toggleEdit"
+      @click="openEdit()"
     >
     <transition name="fade">
       <div v-if="!isEditing" class="icon-container">
@@ -117,7 +135,7 @@ function cancelEdit() {
       <div v-if="isEditing" class="edit-container">
         <span class="aite">@</span>
         <button 
-          @click="newsubmitComment(comment)" 
+          @click="tempSubComment.parent_id ? newSubmitSubComment() : newsubmitComment()" 
           :class="{'disabled': commentText.length === 0}" 
           class="go"
         >

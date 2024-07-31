@@ -1,113 +1,3 @@
-<script setup>
-import axios from 'axios';
-import { onMounted, reactive, ref, computed, watch } from 'vue';
-import object from 'lodash-es/object';
-import Comment from '../comment/Comment.vue';
-import ReplyPart from '../comment/replyPart.vue';
-import { userInfoStore } from '../../store/user';
-import { storeToRefs } from 'pinia';
-import { commentInfoStore } from '../../store/comment';
-
-const commentStore = commentInfoStore();
-const { getComments, commentsByArticleId } = commentStore;
-
-const userStore = userInfoStore();
-const userThing = storeToRefs(userStore);
-const { showLogin } = storeToRefs(userStore);
-let props = defineProps(['article']);
-let isHover = ref(false);
-let commentCount = ref();
-const title = ref(props.article.title);
-const img_url = ref(props.article.img_url);
-let like_count = ref(props.article.like_count);
-let star_count = ref(props.article.star_count);
-const author_id = ref(props.article.author_id);
-const content = ref(props.article.content);
-const article_id = ref(props.article.article_id);
-var publication_time = ref(props.article.publication_time);
-const address = ref(props.article.address);
-let like = ref(false);
-let userInfo = reactive({});
-let userName = ref('');
-let avatar = ref('');
-let article_inner = ref(false);
-publication_time = publication_time.value.substring(0, 10);
-
-const comment_content = computed(() => commentsByArticleId[article_id.value] || []);
-
-async function newgetComment() {
-  await getComments(article_id.value);
-  
-}
-
-async function searchUserById(Author_id) {
-  let res = await axios.get(`http://localhost:8080/SearchUserById/${Author_id}`);
-  object.assign(userInfo, res.data.data);
-  
-  userName.value = userInfo[0].username;
-  avatar.value = userInfo[0].avatar;
-}
-
-async function getCommentCount() {
-  try {
-    const res = await axios.get(`http://localhost:8080/getCommentCount/${article_id.value}`);
-    commentCount.value = res.data;
-  } catch (error) {
-    console.error('获取评论数量失败：', error);
-  }
-}
-
-function addLike() {
-  axios.post(`http://localhost:8080/addLike/${article_id.value}`)
-    .then(() => {
-      like_count.value++;
-    })
-    .catch(error => {
-      console.error('点赞失败：', error);
-    });
-}
-
-function subLike() {
-  axios.post(`http://localhost:8080/subLike/${article_id.value}`)
-    .then(() => {
-      like_count.value--;
-    })
-    .catch(error => {
-      console.error('点赞失败：', error);
-    });
-}
-
-function likeThing() {
-  like.value = !like.value;
-}
-
-function unlikeThing() {
-  like.value = !like.value;
-}
-
-async function getCommentThing() {
-  await newgetComment();
-  await getCommentCount();
-  article_inner.value = true;
-}
-
-function subscribe(isLogin) {
-  if (!showLogin.value) {
-    showLogin.value = true;
-  } else {
-    console.log('sub');
-    //
-  }
-}
-
-onMounted(() => {
-  searchUserById(author_id.value);
-});
-
-// 监听 commentsByArticleId 中指定 article_id 的变化
-
-</script>
-
 <template>
   <div class="article-inner" v-show="article_inner">
     <span class="article_img_inner"><img :src="img_url" alt=""></span>
@@ -119,7 +9,7 @@ onMounted(() => {
       </div>
       <div class="article-comment">
         <div class="articleContent">
-          <div class="inner-title">{{ title }}</div>
+          <div class="inner-title">{{ articleTitle }}</div>
           <div class="inner-content">{{ content }}</div>
           <div class="date">{{ publication_time }}  {{ address }}</div>
           <hr class="article-comment-hr">
@@ -135,7 +25,7 @@ onMounted(() => {
   <div class="content-item article-container">
     <div class="main-area" @click="getCommentThing()">
       <img class="img-area" :src="img_url" alt="">
-      <div class="txt-area">{{ title }}</div>
+      <div class="txt-area">{{ articleTitle }}</div>
     </div>
     <div class="article-bottom">
       <div>
@@ -150,6 +40,95 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<script setup>
+import axios from 'axios';
+import { onMounted, reactive, ref, computed } from 'vue';
+import Comment from '../comment/Comment.vue';
+import ReplyPart from '../comment/replyPart.vue';
+import { userInfoStore } from '../../store/user';
+import { storeToRefs } from 'pinia';
+import { commentInfoStore } from '../../store/comment';
+
+const props = defineProps(['article']);
+
+const commentStore = commentInfoStore();
+const { getComments, commentsByArticleId } = commentStore;
+
+const userStore = userInfoStore();
+const { showLogin } = storeToRefs(userStore);
+
+const {
+  title: articleTitle,
+  img_url,
+  like_count,
+  star_count,
+  author_id,
+  content,
+  article_id,
+  publication_time,
+  address,
+} = props.article;
+
+const article_inner = ref(false);
+const commentCount = ref();
+const like = ref(false);
+const userInfo = reactive({});
+const userName = ref('');
+const avatar = ref('');
+const comment_content = computed(() => commentsByArticleId[article_id] || []);
+
+async function fetchComments() {
+  await getComments(article_id);
+}
+
+async function searchUserById(authorId) {
+  const res = await axios.get(`http://localhost:8080/SearchUserById/${authorId}`);
+  Object.assign(userInfo, res.data.data);
+  userName.value = userInfo[0].username;
+  avatar.value = userInfo[0].avatar;
+}
+
+async function getCommentCount() {
+  try {
+    const res = await axios.get(`http://localhost:8080/getCommentCount/${article_id}`);
+    commentCount.value = res.data;
+  } catch (error) {
+    console.error('获取评论数量失败：', error);
+  }
+}
+
+function toggleLike() {
+  like.value = !like.value;
+  const url = `http://localhost:8080/${like.value ? 'addLike' : 'subLike'}/${article_id}`;
+  axios.post(url)
+    .then(() => {
+      like_count += like.value ? 1 : -1;
+    })
+    .catch(error => {
+      console.error(`${like.value ? '点赞' : '取消点赞'}失败：`, error);
+    });
+}
+
+async function getCommentThing() {
+  await fetchComments();
+  await getCommentCount();
+  article_inner.value = true;
+}
+
+function subscribe(isLogin) {
+  if (!isLogin) {
+    showLogin.value = true;
+  } else {
+    console.log('sub');
+    // 执行关注操作
+  }
+}
+
+onMounted(() => {
+  searchUserById(author_id);
+});
+</script>
 
 <style scoped>
 .content-item {
