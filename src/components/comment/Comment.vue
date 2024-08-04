@@ -29,7 +29,7 @@
   </div>
   <div v-if="visibleSubComments.length > 0" class="sub-comments">
     <Comment
-      v-for="subComment in visibleSubComments"
+      v-for="(subComment, index) in visibleSubComments"
       :key="subComment.comment_id"
       :comment="subComment"
       :article_id="article_id"
@@ -41,7 +41,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive, computed } from 'vue';
+import { ref, onMounted, reactive, computed, watch } from 'vue';
 import { userInfoStore } from '../../store/user';
 import { commentInfoStore } from '../../store/comment';
 import axios from 'axios';
@@ -84,10 +84,7 @@ const getuserbyCommentid = async (c_id) => {
 const loadSubComments = async () => {
   if (!grandparent_id) {
     await commentStore.getSubComments(comment.comment_id);
-    visibleSubComments.value = subComments.value.slice(0, 1);
-    if (subCommentCount.value > 1) {
-      showMoreButtonText.value = `展开${subCommentCount.value - 1}条回复`;
-    }
+    updateVisibleSubComments();
   }
 };
 
@@ -108,17 +105,8 @@ const toggleLike = () => {
 };
 
 const showMoreReplies = () => {
-  const currentlyVisible = visibleSubComments.value.length;
-  if (currentlyVisible === 1) {
-    visibleSubComments.value = subComments.value.slice(0, 6);
-    showMoreButtonText.value = "展开更多回复";
-  } else {
-    visibleSubComments.value = subComments.value;
-    showMoreButtonText.value = "";
-  }
-  if (visibleSubComments.value.length === subComments.value.length) {
-    showMoreButtonText.value = "";
-  }
+  visibleSubComments.value = subComments.value;
+  showMoreButtonText.value = '';
 };
 
 const handleReplyClick = () => {
@@ -135,6 +123,20 @@ const handleReplyClick = () => {
   }
 };
 
+const updateVisibleSubComments = () => {
+  if (subCommentCount.value > 1) {
+    visibleSubComments.value = subComments.value.slice(0, 1);
+    showMoreButtonText.value = `展开${subCommentCount.value - 1}条回复`;
+  } else {
+    visibleSubComments.value = subComments.value;
+    showMoreButtonText.value = '';
+  }
+};
+
+watch(subComments, () => {
+  updateVisibleSubComments();
+});
+
 onMounted(() => {
   searchUserById(comment.user_id);
   loadSubComments();
@@ -143,6 +145,7 @@ onMounted(() => {
   }
 });
 </script>
+
 <style scoped>
 .main-area {
   display: flex;
