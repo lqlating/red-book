@@ -10,7 +10,7 @@ import { storeToRefs } from 'pinia';
 const editStore = editInfoStore();
 const { isEditing } = storeToRefs(editStore);
 const commentStore = commentInfoStore();
-const { submitComment, submitSubComment, tempSubComment, grandparent_id } = commentStore;
+const { submitComment, submitSubComment, tempSubComment, grandparent_id,getSubComments } = commentStore;
 const userStore = userInfoStore();
 const user_id = ref(userStore.userThing.id);
 const props = defineProps(['commentCount', 'like_count', 'star_count', 'article_id', 'like', 'comments']);
@@ -33,6 +33,7 @@ async function newsubmitComment() {
   await submitComment(comment);
   commentText.value = '';
   isEditing.value = false; // 切换回初始状态
+  
 }
 
 async function newSubmitSubComment() {
@@ -43,6 +44,7 @@ async function newSubmitSubComment() {
     // parent_id: props.parent_id,
   });
   await submitSubComment();
+  // console.log("i am ",commentStore.grandparent_id)
   commentText.value = '';
   isEditing.value = false; // 切换回初始状态
 }

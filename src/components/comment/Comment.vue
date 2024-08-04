@@ -59,7 +59,6 @@ const { comment, article_id, grandparent_id } = props;
 
 const userName = ref('');
 const avatar = ref('');
-const subCommentCount = ref(0);
 const isLiked = ref(false);
 const localLikeCount = ref(comment.like_count);
 const userInfo = reactive({});
@@ -68,6 +67,8 @@ const visibleSubComments = ref([]);
 const showMoreButtonText = ref('');
 
 const subCommentUserName = ref('');
+
+const subCommentCount = computed(() => subComments.value.length);
 
 const getuserbyCommentid = async (c_id) => {
   if (grandparent_id) {
@@ -80,19 +81,13 @@ const getuserbyCommentid = async (c_id) => {
   }
 };
 
-const loadSubCommentCount = async () => {
-  if (!grandparent_id) {
-    subCommentCount.value = await commentStore.getSubCommentCount(comment.comment_id);
-    if (subCommentCount.value > 1) {
-      showMoreButtonText.value = `展开${subCommentCount.value - 1}条回复`;
-    }
-  }
-};
-
 const loadSubComments = async () => {
   if (!grandparent_id) {
     await commentStore.getSubComments(comment.comment_id);
     visibleSubComments.value = subComments.value.slice(0, 1);
+    if (subCommentCount.value > 1) {
+      showMoreButtonText.value = `展开${subCommentCount.value - 1}条回复`;
+    }
   }
 };
 
@@ -130,20 +125,18 @@ const handleReplyClick = () => {
   isEditing.value = !isEditing.value;
   if (grandparent_id) {
     commentStore.grandparent_id = grandparent_id;
-    // console.log(commentStore.tempSubComment)
-    
+  } else {
+    commentStore.grandparent_id = props.comment.comment_id;
+  }
   if (!commentStore.parent_id) {
     commentStore.tempSubComment.parent_id = comment.comment_id;
-    console.log(commentStore.tempSubComment)
   } else {
     commentStore.tempSubComment.parent_id = null;
   }
-}
 };
 
 onMounted(() => {
   searchUserById(comment.user_id);
-  loadSubCommentCount();
   loadSubComments();
   if (grandparent_id) {
     getuserbyCommentid(comment.parent_id);
@@ -240,7 +233,7 @@ button img {
 }
 
 .subcomment .content-wrapper {
-  max-width: 90%; /* 更改为90%以确保与父评论一致 */
+  max-width: 90%; /* 更改为90%以确保与父评论一致。 */
 }
 
 .sub-comments {
