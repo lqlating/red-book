@@ -1,5 +1,5 @@
 <template>
-  <div class="article-inner" v-show="article_inner">
+  <div class="article-inner" v-if="article_inner">
     <span class="article_img_inner"><img :src="img_url" alt=""></span>
     <span>
       <div class="user-inner">
@@ -21,7 +21,8 @@
       <ReplyPart :commentCount="commentCount" :like_count="like_count" :star_count="star_count" :article_id="article_id" :like="like"></ReplyPart>
     </span>
   </div>
-  <div class="mask" v-show="article_inner" @click="article_inner = false"></div>
+
+  <div class="mask" v-if="article_inner" @click="article_inner = false"></div>
   <div class="content-item article-container">
     <div class="main-area" @click="getCommentThing()">
       <img class="img-area" :src="img_url" alt="">
@@ -49,11 +50,12 @@ import ReplyPart from '../comment/replyPart.vue';
 import { userInfoStore } from '../../store/user';
 import { storeToRefs } from 'pinia';
 import { commentInfoStore } from '../../store/comment';
+import userApi from '../../api/userApi';
+import commentApi from '../../api/commentApi';
 
 const props = defineProps(['article']);
-
 const commentStore = commentInfoStore();
-const { getComments, commentsByArticleId } = commentStore;
+const { getComments, getCommentCount, commentsByArticleId, commentCountByArticleId } = commentStore;
 
 const userStore = userInfoStore();
 const { showLogin } = storeToRefs(userStore);
@@ -71,7 +73,7 @@ const {
 } = props.article;
 
 const article_inner = ref(false);
-const commentCount = ref();
+const commentCount = computed(() => commentCountByArticleId[article_id] || 0);
 const like = ref(false);
 const userInfo = reactive({});
 const userName = ref('');
@@ -80,22 +82,14 @@ const comment_content = computed(() => commentsByArticleId[article_id] || []);
 
 async function fetchComments() {
   await getComments(article_id);
+  await getCommentCount(article_id);
 }
 
 async function searchUserById(authorId) {
-  const res = await axios.get(`http://localhost:8080/SearchUserById/${authorId}`);
+  const res = await userApi.SearchUserById(authorId);
   Object.assign(userInfo, res.data.data);
   userName.value = userInfo[0].username;
   avatar.value = userInfo[0].avatar;
-}
-
-async function getCommentCount() {
-  try {
-    const res = await axios.get(`http://localhost:8080/getCommentCount/${article_id}`);
-    commentCount.value = res.data;
-  } catch (error) {
-    console.error('获取评论数量失败：', error);
-  }
 }
 
 function toggleLike() {
@@ -112,7 +106,6 @@ function toggleLike() {
 
 async function getCommentThing() {
   await fetchComments();
-  await getCommentCount();
   article_inner.value = true;
 }
 
@@ -129,6 +122,7 @@ onMounted(() => {
   searchUserById(author_id);
 });
 </script>
+
 
 <style scoped>
 .content-item {

@@ -6,7 +6,8 @@ import { ElMessage } from 'element-plus';  // 引入 Element UI 的消息提示�
 import { commentInfoStore } from '../../store/comment';
 import { editInfoStore } from '../../store/isEdit';
 import { storeToRefs } from 'pinia';
-
+import commentApi from '../../api/commentApi';
+import articleApi from '../../api/articleApi';
 const editStore = editInfoStore();
 const { isEditing } = storeToRefs(editStore);
 const commentStore = commentInfoStore();
@@ -35,7 +36,9 @@ async function newsubmitComment() {
   isEditing.value = false; // 切换回初始状态
   
 }
-
+// async function getCommentCount(){
+//   await articleApi.GetCommentCount(article_id)
+// }
 async function newSubmitSubComment() {
   Object.assign(tempSubComment, {
     content: commentText.value,
@@ -44,6 +47,7 @@ async function newSubmitSubComment() {
     // parent_id: props.parent_id,
   });
   await submitSubComment();
+  // await getCommentCount();
   // console.log("i am ",commentStore.grandparent_id)
   commentText.value = '';
   isEditing.value = false; // 切换回初始状态

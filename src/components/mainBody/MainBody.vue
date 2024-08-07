@@ -1,8 +1,53 @@
-<!-- mainBody.vue -->
+<template>
+  <div>
+    <div class="outer-overlay" v-if="showLogin" @click="closeDialog">
+      <div class="inner-overlay" @click.stop>
+        <Login :showLogin="showLogin" class="Login" @update:showLogin="updateShowLogin"></Login>
+      </div>
+    </div>
+
+    <div class="mainBody-wrapper">
+      <div class="navigate">
+        <RouterLink to="/Discover" active-class="active" class="my-txt">
+          <span class="txt-inner"><img class="icon" src="../../assets/img/House.png">发现</span>
+        </RouterLink>
+        <a :href="externalLink" target="_blank" :class="['my-txt', isActive ? 'active' : '']">
+          <span class="txt-inner"><img class="icon" src="../../assets/img/shizikuang.png" alt="">发布</span>
+        </a>
+        <RouterLink to="/Notify" active-class="active" class="my-txt">
+          <span class="txt-inner"><img class="icon" src="../../assets/img/ringlingsheng.png" alt="">通知</span>
+        </RouterLink>
+        <RouterLink v-if="isLogin" to="/Me" active-class="active" class="my-txt">
+          <span class="txt-inner"><img class="icon me" :src="userThing.avatar" alt=""> 我</span>
+        </RouterLink>
+        <div v-if="!isLogin" class="login" @click="showLogin = true">登录</div>
+        <div 
+          ref="moreButton"
+          @click="showDropDown"
+          class="more"
+          :class="['my-txt']" 
+        >
+          <img class="more_pic" src="../../../src/assets/img/more_.png" alt="">
+          更多
+        </div>
+        <div class="drop-down2" v-show="showDrop" :style="{ top: `${dropDownPosition.top}px`, left: `${dropDownPosition.left}px` }" @click.stop>
+          <p class="more-inner">关于作者</p>
+          <p class="more-inner">隐私、协议</p>
+          <p class="more-inner" @click="logout">退出登录</p>
+        </div>
+      </div>
+
+      <div class="main-content">
+        <RouterView/>
+      </div>
+    </div>
+  </div>
+</template>
+
 <script setup lang="ts">
-import { RouterView, RouterLink, useRouter } from 'vue-router';
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import Login from "../login/Login.vue";
-import { ref, watch, onMounted, nextTick } from 'vue';
 import { userInfoStore } from "../../store/user";
 import { storeToRefs } from 'pinia';
 
@@ -10,10 +55,16 @@ import { storeToRefs } from 'pinia';
 const userStore = userInfoStore();
 const { isLogin, userThing, showLogin } = storeToRefs(userStore);
 const router = useRouter();
+const route = useRoute();
 
 const closeDialog = () => {
   showLogin.value = false;
 }
+
+const externalLink = "http://localhost:5174/";
+
+// 计算当前路径是否是发布页面的链接
+const isActive = computed(() => route.fullPath === '/Publish');
 
 // 定义一个 ref 来控制 drop-down2 的显示
 let showDrop = ref(false);
@@ -67,57 +118,7 @@ const handleOutsideClick = (event: MouseEvent) => {
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick);
 });
-
 </script>
-
-<template>
-  <div>
-    <div class="outer-overlay" v-if="showLogin" @click="closeDialog">
-      <div class="inner-overlay" @click.stop>
-        <Login :showLogin="showLogin" class="Login" @update:showLogin="updateShowLogin"></Login>
-      </div>
-    </div>
-
-    <div class="mainBody-wrapper">
-      <div class="navigate">
-        <RouterLink to="/Discover" active-class="active" class="my-txt">
-          <span class="txt-inner"><img class="icon" src="../../assets/img/House.png">发现</span>
-        </RouterLink>
-        <RouterLink to="/Publish" active-class="active" class="my-txt">
-          <span class="txt-inner"><img class="icon" src="../../assets/img/shizikuang.png" alt="">发布</span>
-        </RouterLink>
-        <RouterLink to="/Notify" active-class="active" class="my-txt">
-          <span class="txt-inner"><img class="icon" src="../../assets/img/ringlingsheng.png" alt="">通知</span>
-        </RouterLink>
-        <RouterLink v-if="isLogin" to="/Me" active-class="active" class="my-txt">
-          <span class="txt-inner"><img class="icon me" :src="userThing.avatar" alt=""> 我</span>
-        </RouterLink>
-        <div v-if="!isLogin" class="login" @click="showLogin = true">登录</div>
-        <!-- 在这里使用 ref 获取按钮引用 -->
-        <div 
-          ref="moreButton"
-          @click="showDropDown"
-          class="more"
-          :class="['my-txt']" 
-        >
-          <img class="more_pic" src="../../../src/assets/img/more_.png" alt="">
-          更多
-        </div>
-        <!-- 动态设置 drop-down2 的位置 -->
-        <div class="drop-down2" v-show="showDrop" :style="{ top: `${dropDownPosition.top}px`, left: `${dropDownPosition.left}px` }" @click.stop>
-          <!-- 这里是下拉框的内容 -->
-          <p class="more-inner">关于作者</p>
-          <p class="more-inner">隐私、协议</p>
-          <p class="more-inner" @click="logout">退出登录</p>
-        </div>
-      </div>
-
-      <div class="main-content">
-        <RouterView/>
-      </div>
-    </div>
-  </div>
-</template>
 
 <style scoped>
 .main-content {

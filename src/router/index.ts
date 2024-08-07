@@ -7,6 +7,9 @@ import LikeList from "../components/me/meInfo/LikeList.vue";
 import Note from "../components/me/meInfo/Note.vue";
 import StarList from "../components/me/meInfo/StarList.vue";
 import Recommend from '../components/best/Recommend.vue';
+import becomment from '../components/notify/becomment/becomment.vue';
+import like_star from '../components/notify/like_star/like_star.vue';
+import newSubscript from '../components/notify/newSubscript/newSubscript.vue';
 
 const router = createRouter({
     history: createWebHistory(),
@@ -19,13 +22,31 @@ const router = createRouter({
             path: '/Discover',
             component: Discover,
         },
-        {
-            path: '/Publish',
-            component: Publish
-        },
+        // {
+        //     path: '/Publish',
+        //     component: Publish
+        // },
         {
             path: '/Notify',
-            component: Notify
+            component: Notify,
+            children:[
+                {
+                    path:'/',
+                    redirect:becomment,
+                },
+                {
+                    path:'becomment',
+                    component:becomment
+                },
+                {
+                    path:'like_star',
+                    component:like_star
+                },
+                {
+                    path:'newSubscript',
+                    component:newSubscript
+                },
+            ]
         },
         {
             path: '/Me',
