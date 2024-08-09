@@ -51,7 +51,6 @@ import { userInfoStore } from '../../store/user';
 import { storeToRefs } from 'pinia';
 import { commentInfoStore } from '../../store/comment';
 import userApi from '../../api/userApi';
-import commentApi from '../../api/commentApi';
 
 const props = defineProps(['article']);
 const commentStore = commentInfoStore();
