@@ -6,8 +6,6 @@ import { ElMessage } from 'element-plus';  // 引入 Element UI 的消息提示�
 import { commentInfoStore } from '../../store/comment';
 import { editInfoStore } from '../../store/isEdit';
 import { storeToRefs } from 'pinia';
-import commentApi from '../../api/commentApi';
-import articleApi from '../../api/articleApi';
 const editStore = editInfoStore();
 const { isEditing } = storeToRefs(editStore);
 const commentStore = commentInfoStore();

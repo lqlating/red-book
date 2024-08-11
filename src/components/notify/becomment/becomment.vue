@@ -49,17 +49,16 @@ async function getReplyComent() {
     }
 
     replyComments.value = comments;
-    console.log(replyComments.value);
+    // console.log(replyComments.value);
 }
 
 onMounted(() => {
     getReplyComent();
 });
 </script>
-
 <template>
     <div class="main-body">
-        <like_comment v-for="replyComment in replyComments" :isComment="isComment" :replyComment="replyComment" :key="replyComment.id">
+        <like_comment v-for="replyComment in replyComments" :isComment="isComment" :replyComment="replyComment" :key="replyComment.id" :user_id="id">
             <template #reply_name>
                 {{ replyComment.username }}
             </template>
@@ -81,11 +80,28 @@ onMounted(() => {
             </template>
             
         </like_comment>
+        <div class="end-line">- THE END -</div>
     </div>
 </template>
 
 <style scoped>
 .main-body {
-    padding-top: 20px;
+    padding-top: 10px;
+    max-height: 500px; /* 设置最大高度 */
+    overflow-y: auto; /* 允许竖向滚动 */
+    scrollbar-width: none; /* 对于 Firefox 隐藏滚动条 */
+    -ms-overflow-style: none;  /* 对于 IE 和 Edge 隐藏滚动条 */
+}
+
+/* 对于 WebKit 浏览器隐藏滚动条 */
+.main-body::-webkit-scrollbar {
+    display: none;
+}
+
+.end-line {
+    margin-top: 20px;
+    margin-left: 350px;
+    font-size: 12px;
+    color: #33333399;
 }
 </style>
