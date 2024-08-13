@@ -1,4 +1,4 @@
-import axiosInstance from "./aixosInstance";
+import axiosInstance from "./axiosInstance";
 const commentApi = {
     GetCommentCount(article_id) {
         return axiosInstance.get(`/getCommentCount/${article_id}`)

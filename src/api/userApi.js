@@ -1,4 +1,4 @@
-import axiosInstance from "./aixosInstance";
+import axiosInstance from "./axiosInstance";
 const userApi = {
     SearchUserById(authorId){
         return axiosInstance.get(`/SearchUserById/${authorId}`)

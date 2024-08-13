@@ -5,7 +5,8 @@
       <div class="user-inner">
         <img :src="avatar" alt="">
         <span class="username-info">{{ userName }}</span>
-        <span class="subscribe" @click="subscribe(userThing.isLogin.value)">关注</span>
+        <span class="subscribe" @click="subscribe(isLogin)" v-show="!is_subscript">关注</span>
+        <span class="no_subscribe" @click="subscribe(isLogin)" v-show="is_subscript && isLogin">已关注</span>
       </div>
       <div class="article-comment">
         <div class="articleContent">
@@ -51,14 +52,15 @@ import { userInfoStore } from '../../store/user';
 import { storeToRefs } from 'pinia';
 import { commentInfoStore } from '../../store/comment';
 import userApi from '../../api/userApi';
-
+import { ElMessage } from 'element-plus';
+import subscriptApi from '../../api/subscriptApi'
 const props = defineProps(['article']);
 const commentStore = commentInfoStore();
 const { getComments, getCommentCount, commentsByArticleId, commentCountByArticleId } = commentStore;
 
 const userStore = userInfoStore();
-const { showLogin } = storeToRefs(userStore);
-
+const { showLogin,isLogin,targetIds,userThing } = storeToRefs(userStore);
+// console.log(targetIds.value)
 const {
   title: articleTitle,
   img_url,
@@ -70,7 +72,6 @@ const {
   publication_time,
   address,
 } = props.article;
-
 const article_inner = ref(false);
 const commentCount = computed(() => commentCountByArticleId[article_id] || 0);
 const like = ref(false);
@@ -78,6 +79,9 @@ const userInfo = reactive({});
 const userName = ref('');
 const avatar = ref('');
 const comment_content = computed(() => commentsByArticleId[article_id] || []);
+// 计算属性 is_subscript
+const is_subscript = computed(() => targetIds.value.includes(author_id));
+// console.log(is_subscript.value,targetIds.value,author_id);
 
 async function fetchComments() {
   await getComments(article_id);
@@ -90,7 +94,6 @@ async function searchUserById(authorId) {
   userName.value = userInfo[0].username;
   avatar.value = userInfo[0].avatar;
 }
-
 function toggleLike() {
   like.value = !like.value;
   const url = `http://localhost:8080/${like.value ? 'addLike' : 'subLike'}/${article_id}`;
@@ -111,11 +114,33 @@ async function getCommentThing() {
 function subscribe(isLogin) {
   if (!isLogin) {
     showLogin.value = true;
+    article_inner.value = false;
+    // 不再使用 Element UI 的消息提示框
   } else {
     console.log('sub');
-    // 执行关注操作
+    if (is_subscript.value) {
+      // 当 is_subscript 为 true 时，调用 deleteSubscript
+      subscriptApi.deleteSubscript(userThing.value.id, author_id)
+        .then(response => {
+          console.log('取消关注成功');
+        })
+        .catch(error => {
+          console.error('取消关注失败：', error);
+        });
+    } else {
+      // 当 is_subscript 为 false 时，调用 insertSubscript
+      subscriptApi.insertSubscript(userThing.value.id, author_id)
+        .then(response => {
+          console.log('关注成功');
+        })
+        .catch(error => {
+          console.error('关注失败：', error);
+        });
+    }
   }
 }
+
+
 
 onMounted(() => {
   searchUserById(author_id);
@@ -233,18 +258,26 @@ onMounted(() => {
   align-items: center;
 }
 
-.subscribe {
-  font-weight: bold;
+.subscribe,.no_subscribe{
+  font-weight: 600;
   margin-left: auto;
   display: flex;
   justify-content: center;
   align-items: center;
-  color: white;
-  background-color: #FF2E4D;
   cursor: pointer;
   border-radius: 100px;
   width: 96px;
   height: 40px;
+}
+.subscribe {
+  
+
+  color: white;
+  background-color: #FF2E4D;
+}
+.no_subscribe{
+  color: #333333;
+  border: 1px solid rgb(238, 231, 231);
 }
 
 .mask {

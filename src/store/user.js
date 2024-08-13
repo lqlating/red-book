@@ -1,13 +1,23 @@
+// src/stores/userStore.js
 import { defineStore } from "pinia";
 import { ref, reactive } from "vue";
 import axios from 'axios';
 import { ElMessage } from "element-plus";
+import subscriptApi from "../api/subscriptApi";
 
 export const userInfoStore = defineStore('user', () => {
+    // 用户输入的账号和密码
     const account = ref('');
     const password = ref('');
+
+    // 用户是否已登录以及是否显示登录框
     let isLogin = ref(!!localStorage.getItem('userInfo'));
     let showLogin = ref(false);
+
+    // 用户目标 ID 列表
+    let targetIds = ref([]);
+
+    // 用户信息对象，包含各种用户属性
     const userThing = reactive({
         username: '',
         email: '',
@@ -25,6 +35,7 @@ export const userInfoStore = defineStore('user', () => {
         Object.assign(userThing, storedUserInfo);
     }
 
+    // 提交登录信息
     const submitLogin = () => {
         const loginRequest = {
             account: account.value,
@@ -47,6 +58,9 @@ export const userInfoStore = defineStore('user', () => {
                     account.value = '';
                     password.value = '';
                     isLogin.value = true;
+
+                    // 在登录成功后获取 targetIds
+                    fetchTargetIds(userThing.id);
                 }
             })
             .catch(error => {
@@ -57,8 +71,14 @@ export const userInfoStore = defineStore('user', () => {
             });
     };
 
+    // 退出登录
     const logout = () => {
+        // 重置所有状态
         isLogin.value = false;
+        showLogin.value = false;
+        account.value = '';
+        password.value = '';
+        targetIds.value = [];
         Object.assign(userThing, {
             username: '',
             email: '',
@@ -73,5 +93,29 @@ export const userInfoStore = defineStore('user', () => {
         ElMessage.success("登出成功");
     };
 
-    return { password, account, submitLogin, userThing, isLogin, showLogin, logout };
+    // 获取目标 ID 列表
+    const fetchTargetIds = async (userId) => {
+        try {
+            const response = await subscriptApi.getTargetId(userId);
+            targetIds.value = response.data.data; // 直接将响应结果赋值给 targetIds
+        } catch (error) {
+            console.error('请求失败:', error);
+        }
+    };
+
+    // 仅当 userThing.id 有值时才调用
+    if (userThing.id) {
+        fetchTargetIds(userThing.id);
+    }
+
+    return {
+        account,
+        password,
+        isLogin,
+        showLogin,
+        targetIds,
+        userThing,
+        submitLogin,
+        logout
+    };
 });

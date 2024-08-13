@@ -1,4 +1,4 @@
-import axiosInstance from "./aixosInstance";
+import axiosInstance from "./axiosInstance";
 const articleApi = {
     Filtercontent(value){
         return axiosInstance.get(`/FilterContent/${value}`)
