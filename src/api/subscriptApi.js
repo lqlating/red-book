@@ -7,7 +7,7 @@ const subscriptApi = {
     },
 
     // 添加订阅
-    addSubscription(userId, targetId) {
+    insertSubscript(userId, targetId) {
         return axiosInstance.post('/addSubscription', null, {
             params: {
                 userId,
