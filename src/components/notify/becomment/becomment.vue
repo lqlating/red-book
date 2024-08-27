@@ -49,7 +49,6 @@ async function getReplyComent() {
     }
 
     replyComments.value = comments;
-    // console.log(replyComments.value);
 }
 
 onMounted(() => {

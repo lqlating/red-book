@@ -103,6 +103,51 @@ export const userInfoStore = defineStore('user', () => {
         }
     };
 
+// 订阅（关注）作者
+const insertSubscript = async (authorId) => {
+    try {
+        // 防止用户关注自己
+        if (authorId == userThing.id) {
+            ElMessage.warning("不能关注自己！");
+            return; // 退出函数，避免继续执行
+        }
+
+        const response = await subscriptApi.insertSubscript(userThing.id, authorId);
+        // 根据 code 字段判断
+        if (response?.data?.code === 1) {
+            await fetchTargetIds(userThing.id); // 刷新 targetIds
+            // ElMessage.success(response.data.data || "关注成功");
+        } else {
+            // 如果 code 不是 1，显示错误信息
+            ElMessage.error(response.data.data || "关注失败");
+        }
+    } catch (error) {
+        // 捕获异常并记录日志
+        console.error('关注失败:', error);
+        ElMessage.error(error.response?.data?.data || "关注失败");
+    }
+};
+
+// 取消订阅（取消关注）作者
+const deleteSubscript = async (authorId) => {
+    try {
+        const response = await subscriptApi.deleteSubscript(userThing.id, authorId);
+        // 根据 code 字段判断
+        if (response?.data?.code === 1) {
+            await fetchTargetIds(userThing.id); // 刷新 targetIds
+            // ElMessage.success(response.data.data || "取消关注成功");
+        } else {
+            // 如果 code 不是 1，显示错误信息
+            ElMessage.error(response.data.data || "取消关注失败");
+        }
+    } catch (error) {
+        // 捕获异常并记录日志
+        console.error('取消关注失败:', error);
+        ElMessage.error(error.response?.data?.data || "取消关注失败");
+    }
+};
+
+
     // 仅当 userThing.id 有值时才调用
     if (userThing.id) {
         fetchTargetIds(userThing.id);
@@ -116,6 +161,8 @@ export const userInfoStore = defineStore('user', () => {
         targetIds,
         userThing,
         submitLogin,
-        logout
+        logout,
+        insertSubscript,
+        deleteSubscript,
     };
 });

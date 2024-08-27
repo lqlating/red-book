@@ -91,6 +91,6 @@ onMounted(() => {
     display: flex;
     gap: 10px;
     border-bottom: 2px solid #f0f0f0; /* 添加分割线 */
-    padding-bottom: 20px; /* 给分割线和内容之间添加一些间距 */
+    padding-bottom: 10px; /* 给分割线和内容之间添加一些间距 */
 }
 </style>

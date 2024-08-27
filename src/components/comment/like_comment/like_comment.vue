@@ -258,4 +258,11 @@ function handleInput(event) {
 .fade-enter-from, .fade-leave-to {
   opacity: 0;
 }
+
+.separator {
+  width: 100%;  /* Make the line span the full width */
+  height: 0.1px;  /* Set the line thickness */
+  background-color: #ddd;  /* Set the line color */
+  margin-top: 20px;  /* Add some space above the line */
+}
 </style>

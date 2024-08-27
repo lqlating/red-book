@@ -14,10 +14,9 @@
       <div class="publish_date">{{ comment.publish_time }}</div>
       <div class="icons">
         <button class="like" @click="toggleLike">
-          <img v-show="!isLiked" class="heart" src="../../assets/img/heart.png" alt="未点赞">
-          <img v-show="isLiked" class="heart" src="../../assets/img/red_heart.png" alt="已点赞">
-          <span v-show="localLikeCount != 0">{{ localLikeCount }}</span>
-          <span v-show="localLikeCount == 0">赞</span>
+          <i :class="isLiked ? 'fas fa-heart' : 'far fa-heart'" class="heart"></i>
+          <span class="like_count" v-show="localLikeCount != 0">{{ localLikeCount }}</span>
+          <span class="like_count" v-show="localLikeCount == 0">赞</span>
         </button>
         <button class="reply-part" @click="handleReplyClick">
           <img class="reply" src="../../assets/img/_ico_reply.png" alt="回复">
@@ -152,7 +151,7 @@ onMounted(() => {
   align-items: flex-start;
   gap: 10px;
   width: 100%;
-  margin-bottom: 20px; /* 添加底部边距 */
+  margin-bottom: 20px;
 }
 
 .img-wrapper {
@@ -202,9 +201,10 @@ button {
   margin-right: 10px;
 }
 
-button img {
-  width: 20px;
-  height: 20px;
+button img,
+button .heart {
+  width: 16px; /* 设定与回复图标一致的大小 */
+  height: 16px;
   margin-right: 5px;
 }
 
@@ -215,8 +215,9 @@ button img {
 }
 
 .heart {
-  width: 15px;
-  height: 15px;
+  margin-top: 1px;
+  font-size: 15px;
+  color: red; /* 将心形图标的颜色设置为红色 */
 }
 
 .reply {
@@ -236,31 +237,33 @@ button img {
 }
 
 .subcomment .content-wrapper {
-  max-width: 90%; /* 更改为90%以确保与父评论一致。 */
+  max-width: 90%;
 }
 
 .sub-comments {
-  margin-left: 40px; /* 调整为40px以匹配父评论的布局 */
-  margin-top: 10px; /* 添加顶部边距 */
-  margin-bottom: 20px; /* 添加底部边距 */
+  margin-left: 40px;
+  margin-top: 10px;
+  margin-bottom: 20px;
 }
 
 .sub-comment-item {
-  margin-top: 10px; /* 添加子评论之间的边距 */
+  margin-top: 10px;
 }
 
 .subCommentUserName {
   color: #33333399;
 }
-
+.like_count{
+  width: 7px;
+}
 .show-more {
   font-size: 14px;
   color: #13386c;
   background: none;
   border: none;
   cursor: pointer;
-  text-align: left; /* 更改为left，以使其与点赞按钮左端对齐 */
+  text-align: left;
   display: block;
-  margin-left: 32px; /* 确保与点赞按钮左端对齐 */
+  margin-left: 32px;
 }
 </style>

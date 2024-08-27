@@ -1,113 +1,3 @@
-<script setup>
-import { ref, reactive } from 'vue';
-import axios from 'axios';
-import { userInfoStore } from '../../store/user';
-import { ElMessage } from 'element-plus';  // 引入 Element UI 的消息提示组件
-import { commentInfoStore } from '../../store/comment';
-import { editInfoStore } from '../../store/isEdit';
-import { storeToRefs } from 'pinia';
-const editStore = editInfoStore();
-const { isEditing } = storeToRefs(editStore);
-const commentStore = commentInfoStore();
-const { submitComment, submitSubComment, tempSubComment, grandparent_id,getSubComments } = commentStore;
-const userStore = userInfoStore();
-const user_id = ref(userStore.userThing.id);
-const props = defineProps(['commentCount', 'like_count', 'star_count', 'article_id', 'like', 'comments']);
-const like = ref(props.like);
-const star_result = ref(false);
-const like_count = ref(props.like_count);
-const star_count = ref(props.star_count);
-const article_id = props.article_id;
-const commentText = ref(''); // 绑定输入框内容
-const comment = reactive({}); // 定义为空对象
-
-async function newsubmitComment() {
-  Object.assign(comment, {
-    content: commentText.value,
-    article_id: article_id,
-    user_id: user_id.value,
-    // parent_id: null
-  });
-
-  await submitComment(comment);
-  commentText.value = '';
-  isEditing.value = false; // 切换回初始状态
-  
-}
-// async function getCommentCount(){
-//   await articleApi.GetCommentCount(article_id)
-// }
-async function newSubmitSubComment() {
-  Object.assign(tempSubComment, {
-    content: commentText.value,
-    article_id: article_id,
-    user_id: user_id.value,
-    // parent_id: props.parent_id,
-  });
-  await submitSubComment();
-  // await getCommentCount();
-  // console.log("i am ",commentStore.grandparent_id)
-  commentText.value = '';
-  isEditing.value = false; // 切换回初始状态
-}
-
-function addLike() {
-  axios.post(`http://localhost:8080/addLike/${article_id}`)
-    .then(() => {
-      like_count.value++;
-      like.value = !like.value;
-    })
-    .catch(error => {
-      console.error('点赞失败：', error);
-    });
-}
-
-function subLike() {
-  axios.post(`http://localhost:8080/subLike/${article_id}`)
-    .then(() => {
-      like_count.value--;
-      like.value = !like.value;
-    })
-    .catch(error => {
-      console.error('取消点赞失败：', error);
-    });
-}
-
-function addStar() {
-  axios.post(`http://localhost:8080/addStar/${article_id}`)
-    .then(() => {
-      star_count.value++;
-      star_result.value = !star_result.value;
-    })
-    .catch(error => {
-      console.error('收藏失败：', error);
-    });
-}
-
-function subStar() {
-  axios.post(`http://localhost:8080/subStar/${article_id}`)
-    .then(() => {
-      star_count.value--;
-      star_result.value = !star_result.value;
-    })
-    .catch(error => {
-      console.error('取消收藏失败：', error);
-    });
-}
-
-function toggleEdit() {
-  isEditing.value = !isEditing.value;
-}
-
-function cancelEdit() {
-  isEditing.value = false;
-}
-
-function openEdit() {
-  isEditing.value = true;
-}
-</script>
-
 <template>
   <div class="post-comment">
     <input 
@@ -119,18 +9,17 @@ function openEdit() {
     >
     <transition name="fade">
       <div v-if="!isEditing" class="icon-container">
-        <div>
-          <img v-show="!like" @click="addLike" class="heart" src="../../assets/img/heart.png" alt="">
-          <img v-show="like" @click="subLike" class="red_heart" src="../../assets/img/red_heart.png" alt="">
+        <div class="like-container">
+          <i id="iMid" :class="[ like ? 'fas fa-heart red-heart' : 'far fa-heart']" @click="toggleLike"></i>
           <span class="down_thing">{{ like_count }}</span>
         </div>
-        <div>
-          <img v-show="!star_result" @click="addStar" class="star" src="../../assets/img/star.png" alt="">
-          <img v-show="star_result" @click="subStar" class="star" src="../../assets/img/star_1.png" alt="">
+        <div class="star-container">
+          <img v-show="!star_result" @click="addStar" class="star mid" src="../../assets/img/star.png" alt="">
+          <img v-show="star_result" @click="subStar" class="star mid" src="../../assets/img/star_1.png" alt="">
           <span class="down_thing">{{ star_count }}</span>
         </div>
-        <div>
-          <img class="reply" @click="toggleEdit" src="../../assets/img/_ico_reply.png" alt="">
+        <div class="reply-container">
+          <img class="reply mid" @click="toggleEdit" src="../../assets/img/_ico_reply.png" alt="">
           <span class="down_thing">{{ props.commentCount }}</span>
         </div>
       </div>
@@ -151,12 +40,120 @@ function openEdit() {
   </div>
 </template>
 
+<script setup>
+import { ref } from 'vue';
+import axios from 'axios';
+import { userInfoStore } from '../../store/user';
+import { commentInfoStore } from '../../store/comment';
+import { editInfoStore } from '../../store/isEdit';
+import { storeToRefs } from 'pinia';
+
+const editStore = editInfoStore();
+const { isEditing } = storeToRefs(editStore);
+const commentStore = commentInfoStore();
+const { submitComment, submitSubComment, tempSubComment, grandparent_id } = commentStore;
+const userStore = userInfoStore();
+const user_id = ref(userStore.userThing.id);
+const props = defineProps(['commentCount', 'like_count', 'star_count', 'article_id', 'like', 'comments']);
+const like = ref(props.like);
+const star_result = ref(false);
+const like_count = ref(props.like_count);
+const star_count = ref(props.star_count);
+const article_id = props.article_id;
+const commentText = ref('');
+
+async function newsubmitComment() {
+  await submitComment({
+    content: commentText.value,
+    article_id,
+    user_id: user_id.value,
+  });
+  commentText.value = '';
+  isEditing.value = false;
+}
+
+async function newSubmitSubComment() {
+  Object.assign(tempSubComment, {
+    content: commentText.value,
+    article_id: article_id,
+    user_id: user_id.value,
+    // parent_id: props.parent_id,
+  });
+  await submitSubComment();
+  commentText.value = '';
+  isEditing.value = false;
+}
+
+function toggleLike() {
+  if (like.value) {
+    subLike();
+  } else {
+    addLike();
+  }
+}
+
+function addLike() {
+  axios.post(`http://localhost:8080/addLike/${article_id}`)
+    .then(() => {
+      like_count.value++;
+      like.value = true;
+    })
+    .catch(error => {
+      console.error('点赞失败：', error);
+    });
+}
+
+function subLike() {
+  axios.post(`http://localhost:8080/subLike/${article_id}`)
+    .then(() => {
+      like_count.value--;
+      like.value = false;
+    })
+    .catch(error => {
+      console.error('取消点赞失败：', error);
+    });
+}
+
+function addStar() {
+  axios.post(`http://localhost:8080/addStar/${article_id}`)
+    .then(() => {
+      star_count.value++;
+      star_result.value = true;
+    })
+    .catch(error => {
+      console.error('收藏失败：', error);
+    });
+}
+
+function subStar() {
+  axios.post(`http://localhost:8080/subStar/${article_id}`)
+    .then(() => {
+      star_count.value--;
+      star_result.value = false;
+    })
+    .catch(error => {
+      console.error('取消收藏失败：', error);
+    });
+}
+
+function toggleEdit() {
+  isEditing.value = !isEditing.value;
+}
+
+function cancelEdit() {
+  isEditing.value = false;
+}
+
+function openEdit() {
+  isEditing.value = true;
+}
+</script>
+
 <style scoped>
 .post-comment {
   border-top: 0.1px solid rgb(232, 223, 223);
   height: 72.8px;
-  /* height:700px; */
-  padding: 0px 0px 0px 16px;
+  padding: 0 0 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -171,34 +168,23 @@ function openEdit() {
   border: none;
   text-indent: 16px;
 }
-/* .comment_place::placeholder{
-  padding-left: 10px;
-} */
-
-.down_thing {
-  font-weight: 500;
-  margin-left: 4px;
-  vertical-align: 5px;
-  font-size: 14px;
-  color: #333333;
-}
 
 .comment_place:focus {
   outline: none;
 }
 
-
-.icon-container,
+.icon-container{
+  display: flex;
+  align-items: center;
+  position: absolute;
+  right: 50px;
+}
 .edit-container {
   display: flex;
   align-items: center;
   position: absolute;
-  right: 16px;
-}
-
-.icon-container {
+  right: 11px;
   
-  right: 33px;
 }
 
 .icon-container div,
@@ -207,14 +193,38 @@ function openEdit() {
   margin-left: 8px;
 }
 
-.heart,
-.red_heart,
+.like-container,
+.star-container,
+.reply-container {
+  display: flex;
+  align-items: center;
+}
+
+.like-container .fas.fa-heart.red-heart {
+  color: #FF0000;
+}
+
+.down_thing {
+  font-weight: 500;
+  margin-left: 4px;
+  font-size: 14px;
+  color: #333333;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  height: 20px; /* 与图标的高度一致 */
+}
+
+.fas.fa-heart,
+.far.fa-heart,
 .reply,
 .star {
   width: 22px;
   height: 20px;
   margin-top: 10px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
 }
 
 .aite {
@@ -252,16 +262,18 @@ function openEdit() {
   background-color: white;
 }
 
-/* 定义 fade 过渡效果 */
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.3s ease;
 }
 .fade-enter-from, .fade-leave-to {
   opacity: 0;
 }
-
-/* 全局样式 */
-:deep(.el-message) {
-  z-index: 9999 !important;
+.mid{
+  margin-top: -1px;
+}
+html  #iMid{
+  margin-top: -1px;
+  margin-right: -3px;
+  
 }
 </style>

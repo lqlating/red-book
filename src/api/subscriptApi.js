@@ -20,6 +20,11 @@ const subscriptApi = {
     deleteSubscript(userId, targetId) {
         return axiosInstance.delete(`/deleteSubscript/${userId}/${targetId}`);
     },
+
+    // 查询已经关注该用户的所有人的id
+    getUserIdbyTargetId(targetId) {
+        return axiosInstance.get(`/getUserIdsByTargetId/${targetId}`);
+    }
 };
 
 export default subscriptApi;

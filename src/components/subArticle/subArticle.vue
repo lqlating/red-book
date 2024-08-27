@@ -1,66 +1,79 @@
 <template>
-  <div class="article-inner" v-if="article_inner">
-    <span class="article_img_inner"><img :src="img_url" alt=""></span>
+  <div class="article-inner" v-show="article_inner">
+    <span class="article_img_inner"><img :src="img_url" alt="" /></span>
     <span>
       <div class="user-inner">
-        <img :src="avatar" alt="">
+        <img :src="avatar" alt="" />
         <span class="username-info">{{ userName }}</span>
-        <span class="subscribe" @click="subscribe(isLogin)" v-show="!is_subscript">关注</span>
-        <span class="no_subscribe" @click="subscribe(isLogin)" v-show="is_subscript && isLogin">已关注</span>
+        <span class="subscribe" @click="subscribe(isLogin)" v-show="!is_subscript">
+          关注
+        </span>
+        <span class="no_subscribe" @click="subscribe(isLogin)" v-show="is_subscript && isLogin">
+          已关注
+        </span>
       </div>
       <div class="article-comment">
         <div class="articleContent">
           <div class="inner-title">{{ articleTitle }}</div>
           <div class="inner-content">{{ content }}</div>
-          <div class="date">{{ publication_time }}  {{ address }}</div>
-          <hr class="article-comment-hr">
+          <div class="date">{{ publication_time }} {{ address }}</div>
+          <hr class="article-comment-hr" />
           <div class="comment_count">共 <span>{{ commentCount }}</span> 条评论</div>
-          <Comment class="subcomment" :comment="comment" v-for="comment in comment_content" :article_id="article_id"></Comment>
+          <Comment class="subcomment" :comment="comment" v-for="comment in comment_content" :key="comment.id"
+            :article_id="article_id"></Comment>
           <div class="end"> -THE END-</div>
         </div>
       </div>
-      <ReplyPart :commentCount="commentCount" :like_count="like_count" :star_count="star_count" :article_id="article_id" :like="like"></ReplyPart>
+      <ReplyPart :commentCount="commentCount" :like_count="like_count" :star_count="star_count" :article_id="article_id"
+        :like="like"></ReplyPart>
     </span>
   </div>
 
-  <div class="mask" v-if="article_inner" @click="article_inner = false"></div>
+  <div class="mask" v-show="article_inner" @click="article_inner = false"></div>
   <div class="content-item article-container">
     <div class="main-area" @click="getCommentThing()">
-      <img class="img-area" :src="img_url" alt="">
+      <img class="img-area" :src="img_url" alt="" />
       <div class="txt-area">{{ articleTitle }}</div>
     </div>
     <div class="article-bottom">
       <div>
         <span class="userthing">
-          <span class="avatar"><img class="userAvatar" :src="avatar"></span>
+          <span class="avatar">
+            <img class="userAvatar" :src="avatar" />
+          </span>
           <span class="username">{{ userName }}</span>
-          <span v-show="!like" @click="addLike"><img class="heart" @click="likeThing(like)" src="../../assets/img/heart.png" alt=""></span>
-          <span v-show="like" @click="subLike"><img class="red_heart" @click="unlikeThing(like)" src="../../assets/img/red_heart.png" alt=""></span>
+          <span v-show="!like" @click="addLike">
+            <img class="heart" @click="likeThing(like)" src="../../assets/img/heart.png" alt="" />
+          </span>
+          <span v-show="like" @click="subLike">
+            <img class="red_heart" @click="unlikeThing(like)" src="../../assets/img/red_heart.png" alt="" />
+          </span>
           <span class="likeCount">{{ like_count }}</span>
         </span>
       </div>
     </div>
   </div>
+
 </template>
 
 <script setup>
-import axios from 'axios';
-import { onMounted, reactive, ref, computed } from 'vue';
-import Comment from '../comment/Comment.vue';
-import ReplyPart from '../comment/replyPart.vue';
-import { userInfoStore } from '../../store/user';
-import { storeToRefs } from 'pinia';
-import { commentInfoStore } from '../../store/comment';
-import userApi from '../../api/userApi';
-import { ElMessage } from 'element-plus';
-import subscriptApi from '../../api/subscriptApi'
-const props = defineProps(['article']);
+import { onMounted, ref, computed } from "vue";
+import { userInfoStore } from "../../store/user";
+import { storeToRefs } from "pinia";
+import { commentInfoStore } from "../../store/comment";
+import userApi from "../../api/userApi";
+import { LazyImg, Waterfall } from 'vue-waterfall-plugin-next';
+import 'vue-waterfall-plugin-next/dist/style.css';
+import Comment from "../comment/Comment.vue";
+import ReplyPart from "../comment/replyPart.vue";
+
+const props = defineProps(["article"]);
 const commentStore = commentInfoStore();
 const { getComments, getCommentCount, commentsByArticleId, commentCountByArticleId } = commentStore;
 
 const userStore = userInfoStore();
-const { showLogin,isLogin,targetIds,userThing } = storeToRefs(userStore);
-// console.log(targetIds.value)
+const { showLogin, isLogin, targetIds, userThing } = storeToRefs(userStore);
+
 const {
   title: articleTitle,
   img_url,
@@ -72,17 +85,16 @@ const {
   publication_time,
   address,
 } = props.article;
+
 const article_inner = ref(false);
 const commentCount = computed(() => commentCountByArticleId[article_id] || 0);
 const like = ref(false);
-const userInfo = reactive({});
-const userName = ref('');
-const avatar = ref('');
+const userInfo = ref({});
+const userName = ref("");
+const avatar = ref("");
 const comment_content = computed(() => commentsByArticleId[article_id] || []);
-// 计算属性 is_subscript
-const is_subscript = computed(() => targetIds.value.includes(author_id));
-// console.log(is_subscript.value,targetIds.value,author_id);
 
+const is_subscript = computed(() => targetIds.value.includes(author_id));
 async function fetchComments() {
   await getComments(article_id);
   await getCommentCount(article_id);
@@ -90,20 +102,9 @@ async function fetchComments() {
 
 async function searchUserById(authorId) {
   const res = await userApi.SearchUserById(authorId);
-  Object.assign(userInfo, res.data.data);
-  userName.value = userInfo[0].username;
-  avatar.value = userInfo[0].avatar;
-}
-function toggleLike() {
-  like.value = !like.value;
-  const url = `http://localhost:8080/${like.value ? 'addLike' : 'subLike'}/${article_id}`;
-  axios.post(url)
-    .then(() => {
-      like_count += like.value ? 1 : -1;
-    })
-    .catch(error => {
-      console.error(`${like.value ? '点赞' : '取消点赞'}失败：`, error);
-    });
+  userInfo.value = res.data.data;
+  userName.value = userInfo.value[0].username;
+  avatar.value = userInfo.value[0].avatar;
 }
 
 async function getCommentThing() {
@@ -115,37 +116,22 @@ function subscribe(isLogin) {
   if (!isLogin) {
     showLogin.value = true;
     article_inner.value = false;
-    // 不再使用 Element UI 的消息提示框
   } else {
-    console.log('sub');
     if (is_subscript.value) {
-      // 当 is_subscript 为 true 时，调用 deleteSubscript
-      subscriptApi.deleteSubscript(userThing.value.id, author_id)
-        .then(response => {
-          console.log('取消关注成功');
-        })
-        .catch(error => {
-          console.error('取消关注失败：', error);
-        });
+      userStore.deleteSubscript(author_id);
     } else {
-      // 当 is_subscript 为 false 时，调用 insertSubscript
-      subscriptApi.insertSubscript(userThing.value.id, author_id)
-        .then(response => {
-          console.log('关注成功');
-        })
-        .catch(error => {
-          console.error('关注失败：', error);
-        });
+      userStore.insertSubscript(author_id);
     }
   }
 }
 
-
-
 onMounted(() => {
   searchUserById(author_id);
+  console.log()
 });
 </script>
+
+
 
 
 <style scoped>
@@ -190,7 +176,7 @@ onMounted(() => {
   border-right: 1px solid #f1eeee;
 }
 
-.article_img_inner + span {
+.article_img_inner+span {
   width: 47%;
 }
 
@@ -258,7 +244,8 @@ onMounted(() => {
   align-items: center;
 }
 
-.subscribe,.no_subscribe{
+.subscribe,
+.no_subscribe {
   font-weight: 600;
   margin-left: auto;
   display: flex;
@@ -269,13 +256,15 @@ onMounted(() => {
   width: 96px;
   height: 40px;
 }
+
 .subscribe {
-  
+
 
   color: white;
   background-color: #FF2E4D;
 }
-.no_subscribe{
+
+.no_subscribe {
   color: #333333;
   border: 1px solid rgb(238, 231, 231);
 }
@@ -301,10 +290,11 @@ onMounted(() => {
   width: 188px;
   margin-top: 10px;
   padding: 0 20px;
-  font-size: 14px;
+
   margin-left: -12px;
   margin-bottom: 5px;
   color: #555555;
+  font-size: 14px;
 }
 
 .img-area {

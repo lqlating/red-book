@@ -120,8 +120,11 @@
   padding: 5px;
   border: 1px solid #f0f0f0;
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 9999999;
 }
 .drop-down2 {
+  z-index: 9999999;
+
   display: none;
   width: 150px;
   height: auto;
