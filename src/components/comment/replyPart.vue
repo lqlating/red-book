@@ -177,7 +177,7 @@ function openEdit() {
   display: flex;
   align-items: center;
   position: absolute;
-  right: 50px;
+  right: 35px;
 }
 .edit-container {
   display: flex;

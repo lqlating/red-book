@@ -1,16 +1,22 @@
 <script setup>
-import { reactive, ref, onMounted } from 'vue';
+import { reactive, ref, onMounted, computed } from 'vue';
 import articleApi from '../../api/articleApi';
 import { LazyImg, Waterfall } from 'vue-waterfall-plugin-next';
 import 'vue-waterfall-plugin-next/dist/style.css';
 import ArticleInner from '../subArticle/article_inner.vue';
 import { commentInfoStore } from '../../store/comment';
-import Like_button from '../subArticle/like_button.vue'
+import Like_button from '../subArticle/like_button.vue';
+import likeStarApi from '../../api/likeStarApi';
+import { userInfoStore } from '../../store/user';
 
+const userStore = userInfoStore();
+const { userThing } = userStore;
 const commentStore = commentInfoStore();
 const { getCommentCount, getComments } = commentStore;
 
 const articleLists = reactive([]);
+const likedArticles = reactive([]); // 用于存储获取到的点赞文章
+
 const titleList = reactive([
   { title: '推荐', routerlink: '/Discover/Recommend', value: 'Dressing' },
   { title: '穿搭', routerlink: '/Discover/Dressing', value: 'Dressing' },
@@ -64,11 +70,30 @@ function closeArticleInner() {
   selectedArticle.value = null;
 }
 
+async function getLikeArticle() {
+  try {
+    const res = await likeStarApi.searchOperation(userThing.id, 'article', 'like');
+    likedArticles.splice(0, likedArticles.length, ...res.data.data); // 更新 likedArticles
+
+    // 提取 target_id 并去重
+    const targetIds = Array.from(new Set(likedArticles.map(article => article.target_id)));
+    
+    // 将 targetIds 存储到响应式对象中，以便在模板中使用
+    targetIdsRef.value = targetIds;
+    console.log(targetIdsRef.value)
+  } catch (error) {
+    console.error("Error fetching like articles:", error);
+  }
+}
+
+const targetIdsRef = ref([]); // 新增：用于存储去重后的 target_id
+
 onMounted(() => {
   titleList.forEach(item => {
     item.isActive = (item.title === '推荐');
   });
   filterContent("Dressing");
+  getLikeArticle(); // 加载点赞文章
 });
 </script>
 
@@ -88,7 +113,7 @@ onMounted(() => {
               <div class="card">
                 <LazyImg class="lazy" :url="item.img_url" @click="selectArticle(item)" />
                 <p class="text" @click="selectArticle(item)">{{ item.title }}</p>
-                <Like_button :item="item" />
+                <Like_button :item="item" :likedTargetIds="targetIdsRef" /> <!-- 传递去重后的 target_ids 给组件 -->
               </div>
             </div>
           </template>
@@ -98,7 +123,9 @@ onMounted(() => {
     <ArticleInner v-if="selectedArticle" :article="selectedArticle" :article_inner="true" :close="closeArticleInner" />
   </div>
 </template>
+
 <style scoped>
+/* 样式保持不变 */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
