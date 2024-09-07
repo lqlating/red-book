@@ -20,11 +20,10 @@ const likeStarApi = {
         });
     },
     //查询点赞和收藏文章（评论）
-    searchOperation(userId, commentId, articleId, operationType) {
+    searchOperation(userId, contentType, operationType) {
         return axiosInstance.post('/operation/search', {
             user_id: userId,
-            comment_id: commentId,
-            article_id: articleId,
+            content_type:contentType,
             operation_type: operationType
         });
     },
