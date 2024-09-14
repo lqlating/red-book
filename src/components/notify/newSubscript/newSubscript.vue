@@ -1,6 +1,7 @@
 <template>
     <div class="main-body">
       <Subscript
+        :isMeinfo="true"
         v-for="subscriptList in subscriptLists"
         :key="subscriptList.id"
         :subscriptList="subscriptList"
@@ -34,7 +35,6 @@
       res.data.data.map(async (userId) => {
         const response = await userApi.SearchUserById(userId);
         const userData = response.data.data[0]; // Ensure only the user object is returned
-  
         // Add the interaction property
         userData.interaction = targetIds.includes(userData.id);
         return userData;

@@ -33,7 +33,7 @@ onMounted(() => {
             </RouterLink>
         </div>
         <div class="main-area">
-            <RouterView/>
+            <RouterView :key="router.currentRoute.path"/>
         </div>
     </div>
 </template>

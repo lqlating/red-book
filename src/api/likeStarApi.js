@@ -1,7 +1,8 @@
+// src/api/likeStarApi.js
 import axiosInstance from "./axiosInstance";
 
 const likeStarApi = {
-    //点赞或者收藏文章（评论）
+    // 点赞或者收藏文章（评论）
     addOperation(userId, commentId, articleId, operationType) {
         return axiosInstance.post('/operation/add', {
             user_id: userId,
@@ -10,7 +11,7 @@ const likeStarApi = {
             operation_type: operationType
         });
     },
-    //取消点赞和收藏文章（评论）
+    // 取消点赞和收藏文章（评论）
     deleteOperation(userId, commentId, articleId, operationType) {
         return axiosInstance.post('/operation/delete', {
             user_id: userId,
@@ -19,11 +20,11 @@ const likeStarApi = {
             operation_type: operationType
         });
     },
-    //查询点赞和收藏文章（评论）
+    // 查询点赞和收藏文章（评论）
     searchOperation(userId, contentType, operationType) {
         return axiosInstance.post('/operation/search', {
             user_id: userId,
-            content_type:contentType,
+            content_type: contentType,
             operation_type: operationType
         });
     },
@@ -32,4 +33,4 @@ const likeStarApi = {
     }
 };
 
-export default likeStarApi;
+export default likeStarApi;  // 使用 export default 导出

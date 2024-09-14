@@ -1,11 +1,14 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { articleStore } from '../../store/article'; // 引入文章的 Pinia store
 import { commentInfoStore } from '../../store/comment'; // 引入评论的 Pinia store
+import { searchStore } from '../../store/search'; // 引入搜索 Store
 import { LazyImg, Waterfall } from 'vue-waterfall-plugin-next';
 import 'vue-waterfall-plugin-next/dist/style.css';
 import ArticleInner from '../subArticle/article_inner.vue';
 import Like_button from '../subArticle/like_button.vue';
+import { storeToRefs } from 'pinia';
+import UserList from './UserList.vue';
 
 const articleData = articleStore();
 const { filterContent, articleLists } = articleData;
@@ -13,20 +16,38 @@ const { filterContent, articleLists } = articleData;
 const commentStore = commentInfoStore();
 const { getCommentCount, getComments } = commentStore;
 
+const searchData = searchStore();
+const { userList } = storeToRefs(searchData);
+const { searchArticleByTitleOrContent, searchUserByUsername } = searchData;
+const { isSearch, searchArticle } = storeToRefs(searchData);
 const selectedArticle = ref(null);
 
+// 用于控制图片加载的过渡效果
+const imageLoaded = ref({});
+
+// 当图片加载完成后触发，更新加载状态
+function handleImageLoad(articleId) {
+  imageLoaded.value[articleId] = true;
+}
+
 const titleList = ref([
-  { title: '推荐', routerlink: '/Discover/Recommend', value: 'Dressing' },
-  { title: '穿搭', routerlink: '/Discover/Dressing', value: 'Dressing' },
-  { title: '美食', routerlink: '/Discover/Gastronomy', value: 'Gastronomy' },
-  { title: '彩妆', routerlink: '/Discover/MakeUp', value: 'MakeUp' },
-  { title: '影视', routerlink: '/Discover/Filmtelevision', value: 'Filmtelevision' },
-  { title: '职场', routerlink: '/Discover/Workplace', value: 'Workplace' },
-  { title: '情感', routerlink: '/Discover/Emotion', value: 'Emotion' },
-  { title: '家居', routerlink: '/Discover/Shome', value: 'Shome' },
-  { title: '游戏', routerlink: '/Discover/Game', value: 'Game' },
-  { title: '旅行', routerlink: '/Discover/Travel', value: 'Travel' },
-  { title: '健身', routerlink: '/Discover/Fitness', value: 'Fitness' }
+  { title: '推荐', value: 'Dressing' },
+  { title: '穿搭', value: 'Dressing' },
+  { title: '美食', value: 'Gastronomy' },
+  { title: '彩妆', value: 'MakeUp' },
+  { title: '影视', value: 'Filmtelevision' },
+  { title: '职场', value: 'Workplace' },
+  { title: '情感', value: 'Emotion' },
+  { title: '家居', value: 'Shome' },
+  { title: '游戏', value: 'Game' },
+  { title: '旅行', value: 'Travel' },
+  { title: '健身', value: 'Fitness' }
+]);
+
+// 定义 newTitleList
+const newTitleList = ref([
+  { title: '文章', value: 'Articles' },
+  { title: '用户', value: 'Users' }
 ]);
 
 const breakpoints = ref({
@@ -50,14 +71,34 @@ function closeArticleInner() {
   selectedArticle.value = null;
 }
 
-// 设置激活的标签并过滤文章
+// 设置激活的标签并过滤文章或搜索
 const setActive = (item, value) => {
-  filterContent(value);
-  titleList.value.forEach(title => {
+  if (isSearch.value) {
+    if (value === 'Articles') {
+      searchArticle.value = true;
+    } else if (value === 'Users') {
+      searchArticle.value = false;
+    }
+  } else {
+    filterContent(value);
+  }
+  // 更新激活状态
+  const listToUpdate = isSearch.value ? newTitleList.value : titleList.value;
+  listToUpdate.forEach(title => {
     title.isActive = (title === item);
   });
 };
-console.log(articleLists)
+
+// 监听 isSearch 的变化，当切换为 true 时，激活 "文章"
+watch(isSearch, (newValue) => {
+  if (newValue) {
+    const articlesItem = newTitleList.value.find(item => item.value === 'Articles');
+    if (articlesItem) {
+      setActive(articlesItem, articlesItem.value); // 自动触发点击事件，使“文章”激活
+    }
+  }
+});
+
 // 页面挂载时默认加载 "推荐" 文章
 onMounted(async () => {
   titleList.value.forEach(item => {
@@ -65,31 +106,47 @@ onMounted(async () => {
   });
   await filterContent("Dressing");
 });
-
 </script>
 
 <template>
   <div class="Discover-wrapper">
     <div class="title">
-      <span v-for="item in titleList" :key="item.title" :class="{ 'title-inner': true, 'active': item.isActive }"
-            @click="setActive(item, item.value)">
+      <!-- 根据 isSearch 的状态动态展示 titleList 或 newTitleList -->
+      <span v-for="item in (isSearch ? newTitleList : titleList)" :key="item.title" :class="{ 'title-inner': true, 'active': item.isActive }"
+        @click="setActive(item, item.value)">
         {{ item.title }}
       </span>
     </div>
     <transition name="fade">
       <div class="main-body">
-        <Waterfall :list="articleLists" :breakpoints="breakpoints" :gutter="25">
-          <template #item="{ item }">
-            <div class="card">
-              <LazyImg class="lazy" :url="item.img_url" @click="selectArticle(item)" />
-              <p class="text" @click="selectArticle(item)">{{ item.title }}</p>
-              <Like_button :item="item"/>
-            </div>
-          </template>
-        </Waterfall>
+        <!-- 如果 searchArticle 为 true 表示在搜索文章 -->
+        <template v-if="searchArticle">
+          <!-- 如果文章列表为空，显示“没有相应文章”的提示 -->
+          <div v-if="articleLists.length === 0" class="no-articles">
+            没有相应文章
+          </div>
+          <!-- 否则展示文章列表 -->
+          <Waterfall v-else :list="articleLists" :breakpoints="breakpoints" :gutter="25">
+            <template #item="{ item }">
+              <div class="card">
+                <!-- 包裹 LazyImg 的过渡效果 -->
+                <transition name="fade">
+                  <!-- 图片的 v-show 绑定加载状态 -->
+                  <LazyImg class="lazy" :url="item.img_url" @load="handleImageLoad(item.article_id)"
+                    :key="item.article_id + '-img'" v-show="imageLoaded[item.article_id]" @click="selectArticle(item)" />
+                </transition>
+                <p class="text" @click="selectArticle(item)">{{ item.title }}</p>
+                <Like_button :item="item" :key="item.article_id + '-like'" />
+              </div>
+            </template>
+          </Waterfall>
+        </template>
+        
+        <!-- 如果 searchArticle 为 false，显示 UserList -->
+        <UserList v-else />
       </div>
     </transition>
-    <ArticleInner v-if="selectedArticle" :article="selectedArticle" :article_inner="true" :close="closeArticleInner"/>
+    <ArticleInner v-if="selectedArticle" :article="selectedArticle" :article_inner="true" :close="closeArticleInner" />
   </div>
 </template>
 
@@ -97,7 +154,7 @@ onMounted(async () => {
 /* 样式保持不变 */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.5s ease;
 }
 
 .fade-enter,
@@ -111,7 +168,6 @@ onMounted(async () => {
 
 .main-body {
   width: 100%;
-  display: flex;
   flex-wrap: wrap;
   max-height: 75vh;
   overflow-y: auto;
@@ -176,5 +232,13 @@ onMounted(async () => {
   padding: 0 10px;
   word-break: break-all;
   overflow: hidden;
+}
+
+.no-articles {
+  margin: 200px;
+  text-align: center;
+  color: #888;
+  font-size: 16px;
+  padding: 20px;
 }
 </style>

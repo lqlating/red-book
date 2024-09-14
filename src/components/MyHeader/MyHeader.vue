@@ -1,6 +1,33 @@
 <script setup>
+import { ref } from 'vue';
+import { searchStore } from '../../store/search'; // 假设 store 路径为 ../stores/searchStore
+import { storeToRefs } from 'pinia';
 
+
+// 使用 searchStore
+const useSearchStore = searchStore();
+const {searchArticleByTitleOrContent,searchUserByUsername} = useSearchStore
+let {  isSearch } = storeToRefs(useSearchStore);
+const searchKeyword = ref(''); // 用于存储输入框中的内容
+
+// 点击搜索按钮或按下回车时触发搜索
+function handleSearch() {
+  if (searchKeyword.value.trim() !== '') {
+    isSearch.value = true; // 设置 isSearch 为 true
+    searchArticleByTitleOrContent(searchKeyword.value); // 调用搜索文章函数
+    searchUserByUsername(searchKeyword.value)
+    
+  }
+}
+
+// 监听回车键
+function onEnterPress(event) {
+  if (event.key === 'Enter') {
+    handleSearch(); // 调用搜索
+  }
+}
 </script>
+
 <template>
   <div>
     <div class="search-box">
@@ -9,8 +36,8 @@
           alt=""></span>
 
       <span class="input-wrapper">
-        <input type="text" class="input-box" placeholder="Search...">
-        <div class="search-icon"><img class="search-img" src="../../assets/img/search.png" alt=""></div>
+        <input type="text" class="input-box" placeholder="Search..." v-model="searchKeyword" @keyup.enter="onEnterPress">
+        <div class="search-icon" @click="handleSearch"><img class="search-img" src="../../assets/img/search.png" alt=""></div>
       </span>
 
       <span class="work-together">
@@ -37,6 +64,7 @@
     </div>
   </div>
 </template>
+
 <style scoped>
 .useless{
   position: absolute;
@@ -166,7 +194,9 @@
   width: 300px;
   margin: 50px auto;
 }
-
+.input-box:focus{
+  outline: none;
+}
 .input-box {
   background-color: #f5f5f5;
 

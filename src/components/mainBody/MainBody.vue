@@ -8,14 +8,14 @@
 
     <div class="mainBody-wrapper">
       <div class="navigate">
-        <RouterLink to="/Discover" active-class="active" class="my-txt">
-          <span class="txt-inner"><img class="icon" src="../../assets/img/House.png">发现</span>
+        <RouterLink to="/Discover" active-class="active" class="my-txt" @click="setIsSearchFalse">
+          <span class="txt-inner"><img class="icon" src="@/assets/img/House.png">发现</span>
         </RouterLink>
         <a :href="externalLink" target="_blank" :class="['my-txt', isActive ? 'active' : '']">
-          <span class="txt-inner"><img class="icon" src="../../assets/img/shizikuang.png" alt="">发布</span>
+          <span class="txt-inner"><img class="icon" src="@/assets/img/shizikuang.png" alt="">发布</span>
         </a>
         <RouterLink to="/Notify" active-class="active" class="my-txt">
-          <span class="txt-inner"><img class="icon" src="../../assets/img/ringlingsheng.png" alt="">通知</span>
+          <span class="txt-inner"><img class="icon" src="@/assets/img/ringlingsheng.png" alt="">通知</span>
         </RouterLink>
         <RouterLink v-if="isLogin" to="/Me" active-class="active" class="my-txt">
           <span class="txt-inner"><img class="icon me" :src="userThing.avatar" alt=""> 我</span>
@@ -25,9 +25,9 @@
           ref="moreButton"
           @click="showDropDown"
           class="more"
-          :class="['my-txt']" 
+          :class="['my-txt']"
         >
-          <img class="more_pic" src="../../../src/assets/img/more_.png" alt="">
+          <img class="more_pic" src="@/assets/img/more_.png" alt="">
           更多
         </div>
         <div class="drop-down2" v-show="showDrop" :style="{ top: `${dropDownPosition.top}px`, left: `${dropDownPosition.left}px` }" @click.stop>
@@ -44,16 +44,22 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Login from "../login/Login.vue";
 import { userInfoStore } from "../../store/user";
 import { storeToRefs } from 'pinia';
-
+import { searchStore } from "@/store/search";  // 引入 search store
+import { articleStore } from '../../store/article';
+const useArticleStore = articleStore();
+const {filterContent} = useArticleStore
 // 引入用户信息 store
 const userStore = userInfoStore();
 const { isLogin, userThing, showLogin } = storeToRefs(userStore);
+const search = searchStore();
+const { isSearch } = storeToRefs(search);  // 获取 isSearch 变量
+
 const router = useRouter();
 const route = useRoute();
 
@@ -67,12 +73,12 @@ const externalLink = "http://localhost:5174/";
 const isActive = computed(() => route.fullPath === '/Publish');
 
 // 定义一个 ref 来控制 drop-down2 的显示
-let showDrop = ref(false);
+const showDrop = ref(false);
 // 定义一个 ref 来保存 drop-down2 的位置
-let dropDownPosition = ref({ top: 0, left: 0 });
+const dropDownPosition = ref({ top: 0, left: 0 });
 
 // 获取 more 按钮的引用
-const moreButton = ref<HTMLElement | null>(null);
+const moreButton = ref(null);
 
 const showDropDown = () => {
   showDrop.value = !showDrop.value;
@@ -89,8 +95,14 @@ const showDropDown = () => {
   });
 };
 
-const updateShowLogin = (value: boolean) => {
+const updateShowLogin = (value) => {
   showLogin.value = value; // 更新 showLogin 的值
+}
+
+// 设置 isSearch 为 false 的方法
+const setIsSearchFalse = () => {
+  isSearch.value = false;
+  filterContent("Dressing")
 }
 
 // 监控 isLogin 的变化，当其变为 true 时，跳转到 /Me 路由
@@ -108,8 +120,8 @@ const logout = () => {
 };
 
 // 点击下拉框外部时隐藏下拉框
-const handleOutsideClick = (event: MouseEvent) => {
-  if (showDrop.value && !moreButton.value?.contains(event.target as Node)) {
+const handleOutsideClick = (event) => {
+  if (showDrop.value && !moreButton.value?.contains(event.target)) {
     showDrop.value = false;
   }
 };
@@ -144,6 +156,7 @@ onMounted(() => {
 }
 
 .Login {
+  outline: none;
   width: 400px; /* 登录框的宽度 */
   height: 240px; /* 登录框的高度 */
   background-color: #fff;

@@ -41,18 +41,22 @@
 
 <script setup>
 import { ref, onMounted, reactive, computed, watch } from 'vue';
+import { storeToRefs } from 'pinia';
 import { userInfoStore } from '../../store/user';
 import { commentInfoStore } from '../../store/comment';
+import { useLikeStore } from '../../store/likeStar';
 import axios from 'axios';
 import { editInfoStore } from '../../store/isEdit';
-import { storeToRefs } from 'pinia';
 
 const editStore = editInfoStore();
 const { isEditing } = storeToRefs(editStore);
 const userStore = userInfoStore();
 const commentStore = commentInfoStore();
-const user_id = ref(userStore.userThing.id);
+const likeStore = useLikeStore();
 
+const user_id = ref(userStore.userThing.id);
+const likedCommentIds = storeToRefs(likeStore).likedCommentIds; // 从 store 获取
+const { fetchLikedCommentIds } = likeStore;
 const props = defineProps(['comment', 'article_id', 'grandparent_id']);
 const { comment, article_id, grandparent_id } = props;
 
@@ -64,29 +68,10 @@ const userInfo = reactive({});
 const subComments = computed(() => commentStore.subCommentsByParentId[comment.comment_id] || []);
 const visibleSubComments = ref([]);
 const showMoreButtonText = ref('');
-
 const subCommentUserName = ref('');
-
 const subCommentCount = computed(() => subComments.value.length);
 
-const getuserbyCommentid = async (c_id) => {
-  if (grandparent_id) {
-    try {
-      const res = await axios.get(`http://localhost:8080/getUserByCommentId/${c_id}`);
-      subCommentUserName.value = res.data.data[0].username;
-    } catch (error) {
-      console.error('加载用户信息失败:', error);
-    }
-  }
-};
-
-const loadSubComments = async () => {
-  if (!grandparent_id) {
-    await commentStore.getSubComments(comment.comment_id);
-    updateVisibleSubComments();
-  }
-};
-
+// 获取用户信息
 const searchUserById = async (userId) => {
   try {
     const res = await axios.get(`http://localhost:8080/SearchUserById/${userId}`);
@@ -98,16 +83,49 @@ const searchUserById = async (userId) => {
   }
 };
 
-const toggleLike = () => {
-  isLiked.value = !isLiked.value;
-  localLikeCount.value += isLiked.value ? 1 : -1;
+// 获取用户评论的用户信息
+const getuserbyCommentid = async (c_id) => {
+  if (grandparent_id) {
+    try {
+      const res = await axios.get(`http://localhost:8080/getUserByCommentId/${c_id}`);
+      subCommentUserName.value = res.data.data[0].username;
+    } catch (error) {
+      console.error('加载用户信息失败:', error);
+    }
+  }
 };
 
+// 加载子评论
+const loadSubComments = async () => {
+  if (!grandparent_id) {
+    await commentStore.getSubComments(comment.comment_id);
+    updateVisibleSubComments();
+  }
+};
+
+// 点赞切换
+const toggleLike = async () => {
+  isLiked.value = !isLiked.value;
+  localLikeCount.value += isLiked.value ? 1 : -1;
+
+  if (isLiked.value) {
+    await likeStore.addCommentLike(user_id.value, comment.comment_id);
+    if (!likedCommentIds.value.includes(comment.comment_id)) {
+      likedCommentIds.value.push(comment.comment_id);
+    }
+  } else {
+    await likeStore.removeCommentLike(user_id.value, comment.comment_id);
+    likedCommentIds.value = likedCommentIds.value.filter(id => id !== comment.comment_id);
+  }
+};
+
+// 展开更多回复
 const showMoreReplies = () => {
   visibleSubComments.value = subComments.value;
   showMoreButtonText.value = '';
 };
 
+// 处理回复点击事件
 const handleReplyClick = () => {
   isEditing.value = !isEditing.value;
   if (grandparent_id) {
@@ -122,6 +140,7 @@ const handleReplyClick = () => {
   }
 };
 
+// 更新可见的子评论
 const updateVisibleSubComments = () => {
   if (subCommentCount.value > 1) {
     visibleSubComments.value = subComments.value.slice(0, 1);
@@ -132,11 +151,17 @@ const updateVisibleSubComments = () => {
   }
 };
 
-watch(subComments, () => {
-  updateVisibleSubComments();
+// 监听 likedCommentIds 的变化
+watch(() => likedCommentIds.value, (newVal) => {
+  isLiked.value = newVal.includes(comment.comment_id);
+  
 });
 
-onMounted(() => {
+// 组件挂载时获取用户信息和子评论
+onMounted(async () => {
+  await fetchLikedCommentIds(user_id.value); // 确保获取数据
+  isLiked.value = likedCommentIds.value.includes(comment.comment_id);
+  
   searchUserById(comment.user_id);
   loadSubComments();
   if (grandparent_id) {
@@ -146,6 +171,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 你的样式代码 */
 .main-area {
   display: flex;
   align-items: flex-start;
@@ -253,8 +279,8 @@ button .heart {
 .subCommentUserName {
   color: #33333399;
 }
-.like_count{
-  width: 7px;
+.like_count {
+  margin-left: 5px;
 }
 .show-more {
   font-size: 14px;
@@ -266,4 +292,5 @@ button .heart {
   display: block;
   margin-left: 32px;
 }
+
 </style>

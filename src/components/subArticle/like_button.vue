@@ -1,11 +1,19 @@
 <template>
-  <div class="main-body">
+  <div class="main-body ni">
     <div class="left">
-      <img class="avatar" :src="avatar" />
-      <span class="username">{{ username }}</span>
+      <!-- 显示加载中的占位符或头像 -->
+      <div v-if="loading" class="avatar-skeleton"></div>
+      <img v-else class="avatar" :src="avatar" />
+      
+      <!-- 显示加载中的用户名占位符或用户名 -->
+      <span v-if="loading" class="username-skeleton"></span>
+      <span v-else class="username">{{ username }}</span>
     </div>
     <div class="right">
+      <!-- 点赞图标 -->
       <i :class="isLiked ? 'fas fa-heart' : 'far fa-heart'" @click="toggleLike" class="like-icon"></i>
+      
+      <!-- 显示点赞数 -->
       <span v-show="likeCount > 0" class="like_count">{{ likeCount }}</span>
       <span v-show="likeCount == 0" class="like_count">赞</span>
     </div>
@@ -18,7 +26,7 @@ import { useLikeStore } from '../../store/likeStar';
 import { userInfoStore } from '../../store/user';
 import { storeToRefs } from 'pinia';
 import userApi from '../../api/userApi';
-import { articleStore } from '../../store/article'; // 引入articleStore
+import { articleStore } from '../../store/article';
 
 // 获取store实例
 const userStore = userInfoStore();
@@ -39,6 +47,7 @@ const { article_id } = props.item;
 // 定义响应式变量
 const username = ref('');
 const avatar = ref('');
+const loading = ref(true);  // 加入loading状态
 
 // 计算是否已点赞
 const isLiked = computed(() => likedArticleIds.value.includes(article_id));
@@ -51,21 +60,18 @@ async function getAuthorThing() {
   const res = await userApi.SearchUserById(props.item.author_id);
   username.value = res.data.data[0].username;
   avatar.value = res.data.data[0].avatar;
+  loading.value = false; // 数据加载完成，设置loading为false
 }
 
 // 点赞/取消点赞功能
 async function toggleLike() {
   if (isLiked.value) {
-    // 取消点赞操作
     await removeLike(userThing.id, article_id);
-    // 更新store中的like_count
     if (likeCountMap[article_id] > 0) {
       likeCountMap[article_id] -= 1;
     }
   } else {
-    // 点赞操作
     await addLike(userThing.id, article_id);
-    // 更新store中的like_count
     likeCountMap[article_id] += 1;
   }
 }
@@ -75,20 +81,9 @@ onMounted(async () => {
   await fetchLikedArticleIds(userThing.id); // 加载用户点赞数据
   await getAuthorThing(); // 加载作者信息
 });
-
 </script>
 
 <style scoped>
-.username {
-  color: #333333cc;
-  font-size: 12px;
-  width: 75px;
-  max-width: 80px; /* 设定最大宽度 */
-  white-space: nowrap; /* 禁止换行 */
-  overflow: hidden; /* 超出部分隐藏 */
-  text-overflow: ellipsis; /* 使用省略号显示超出部分 */
-}
-
 .main-body {
   display: flex;
   justify-content: space-between;
@@ -111,8 +106,17 @@ onMounted(async () => {
   margin-right: 8px;
 }
 
-.like_count,
 .username {
+  color: #333333cc;
+  font-size: 12px;
+  width: 75px;
+  max-width: 80px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.like_count {
   color: #333333cc;
   font-size: 12px;
 }
@@ -133,5 +137,21 @@ html .right .like_count {
   margin-left: 8px;
   cursor: pointer;
   color: red;
+}
+
+/* 加载中的占位符样式 */
+.avatar-skeleton {
+  width: 20px;
+  height: 20px;
+  background-color: #e0e0e0;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.username-skeleton {
+  width: 75px;
+  height: 12px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
 }
 </style>
