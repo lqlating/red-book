@@ -136,7 +136,7 @@ onMounted(async () => {
                     :key="item.article_id + '-img'" v-show="imageLoaded[item.article_id]" @click="selectArticle(item)" />
                 </transition>
                 <p class="text" @click="selectArticle(item)">{{ item.title }}</p>
-                <Like_button :item="item" :key="item.article_id + '-like'" />
+                <Like_button :item="item" :key="item.article_id + '-like'" :out="true" />
               </div>
             </template>
           </Waterfall>
@@ -168,9 +168,9 @@ onMounted(async () => {
 
 .main-body {
   width: 100%;
-  flex-wrap: wrap;
   max-height: 75vh;
   overflow-y: auto;
+  flex-wrap: wrap;
   justify-content: space-evenly;
 }
 

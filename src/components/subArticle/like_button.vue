@@ -1,6 +1,6 @@
 <template>
   <div class="main-body ni">
-    <div class="left">
+    <div class="left" :style="leftStyle">
       <!-- 显示加载中的占位符或头像 -->
       <div v-if="loading" class="avatar-skeleton"></div>
       <img v-else class="avatar" :src="avatar" />
@@ -9,7 +9,7 @@
       <span v-if="loading" class="username-skeleton"></span>
       <span v-else class="username">{{ username }}</span>
     </div>
-    <div class="right">
+    <div class="right" :style="rightStyle">
       <!-- 点赞图标 -->
       <i :class="isLiked ? 'fas fa-heart' : 'far fa-heart'" @click="toggleLike" class="like-icon"></i>
       
@@ -41,7 +41,10 @@ const articleStores = articleStore();
 const { getLikeCountByArticleId, likeCountMap } = articleStores;
 
 // props
-const props = defineProps(['item']);
+const props = defineProps({
+  item: Object,
+  out: { type: Boolean, default: false }
+});
 const { article_id } = props.item;
 
 // 定义响应式变量
@@ -76,6 +79,15 @@ async function toggleLike() {
   }
 }
 
+// 动态计算左边和右边的样式
+const leftStyle = computed(() => ({
+  marginLeft: props.out ? '-49px' : '0'
+}));
+
+const rightStyle = computed(() => ({
+  marginRight: props.out ? '-49px' : '0'
+}));
+
 // 页面挂载时执行
 onMounted(async () => {
   await fetchLikedArticleIds(userThing.id); // 加载用户点赞数据
@@ -95,7 +107,6 @@ onMounted(async () => {
 .left {
   display: flex;
   align-items: center;
-  margin-left: -49px;
 }
 
 .avatar {
@@ -129,7 +140,6 @@ html .right .like_count {
 .right {
   display: flex;
   align-items: center;
-  margin-right: -49px;
 }
 
 .like-icon {

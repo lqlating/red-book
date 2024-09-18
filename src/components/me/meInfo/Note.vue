@@ -1,11 +1,41 @@
 <template>
-    <div class="publish_thing">
+    <div v-if="articlesByAuthor.length === 0" class="publish_thing">
         <div><img class="no_publish" src="../../../assets/img/head.png" alt=""></div>
         <div class="no_publish_txt">你暂未发布任何笔记</div>
+    </div>
+    <div v-else class="main-body">
+        <ArticleDisplay :articleLists="articlesByAuthor" />
     </div>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useLikeStore } from '../../../store/likeStar';
+import { userInfoStore } from '../../../store/user';
+import ArticleDisplay from '../../discover/ArticleDisplay.vue';
+
+// 获取用户信息
+const userStore = userInfoStore();
+const userId = userStore.userThing.id;
+console.log("用户ID:", userId);
+
+// 从 store 中获取作者文章列表和获取文章的函数
+const articleStore = useLikeStore();
+const { articlesByAuthor } = storeToRefs(articleStore);
+const { fetchArticlesByAuthorId } = articleStore;
+
+// 当组件挂载时，检查作者文章列表是否为空，若为空则调用接口获取
+onMounted(async () => {
+  if (articlesByAuthor.value.length === 0) {
+    try {
+      await fetchArticlesByAuthorId(userId);
+      console.log("获取到的作者文章列表:", articlesByAuthor.value);
+    } catch (error) {
+      console.error("获取作者文章时出错:", error);
+    }
+  }
+});
 </script>
 
 <style scoped>
@@ -30,5 +60,11 @@
 .no_publish_txt {
     font-size: 16px;
     color: #33333399;
+}
+
+.main-body {
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
 }
 </style>

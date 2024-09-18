@@ -2,11 +2,13 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import likeStarApi from '../api/likeStarApi';
+import articleApi from '../api/articleApi'; // 引入 articleApi
 
 export const useLikeStore = defineStore('like', () => {
   let likedArticleIds = ref([]);  // 用户点赞的文章ID列表
   let starredArticleIds = ref([]); // 用户收藏的文章ID列表
   let likedCommentIds = ref([]);   // 用户点赞的评论ID列表
+  let articlesByAuthor = ref([]);  // 存储根据作者 ID 获取的文章
 
   // 获取用户点赞的文章ID列表
   const fetchLikedArticleIds = async (userId) => {
@@ -26,7 +28,6 @@ export const useLikeStore = defineStore('like', () => {
       const response = await likeStarApi.searchOperation(userId, 'article', 'star');
       if (response.data.code === 1) {
         starredArticleIds.value = response.data.data.map(item => item.target_id);
-        console.log(starredArticleIds.value);
       }
     } catch (error) {
       console.error('获取收藏数据失败:', error);
@@ -42,6 +43,18 @@ export const useLikeStore = defineStore('like', () => {
       }
     } catch (error) {
       console.error('获取点赞评论数据失败:', error);
+    }
+  };
+
+  // 根据作者ID获取文章列表
+  const fetchArticlesByAuthorId = async (authorId) => {
+    try {
+      const response = await articleApi.getArticlesByAuthorId(authorId);
+      if (response.data.code === 1) {
+        articlesByAuthor.value = response.data.data; // 将返回的文章数据存储到 articlesByAuthor 中
+      }
+    } catch (error) {
+      console.error('获取作者文章失败:', error);
     }
   };
 
@@ -121,9 +134,11 @@ export const useLikeStore = defineStore('like', () => {
     likedArticleIds,
     starredArticleIds,
     likedCommentIds,
+    articlesByAuthor, // 新增的状态存储
     fetchLikedArticleIds,
     fetchStarredArticleIds,
     fetchLikedCommentIds, // 获取点赞评论的函数
+    fetchArticlesByAuthorId, // 获取作者文章的函数
     addLike,
     removeLike,
     addStar,
