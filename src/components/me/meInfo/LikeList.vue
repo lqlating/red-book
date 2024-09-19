@@ -48,7 +48,6 @@ try {
 <style scoped>
 .main-body {
   margin-top: 20px;
-  flex-wrap: wrap;
-  justify-content: space-evenly;
+  
 }
 </style>

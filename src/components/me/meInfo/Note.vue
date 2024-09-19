@@ -3,9 +3,9 @@
         <div><img class="no_publish" src="../../../assets/img/head.png" alt=""></div>
         <div class="no_publish_txt">你暂未发布任何笔记</div>
     </div>
-    <div v-else class="main-body">
-        <ArticleDisplay :articleLists="articlesByAuthor" />
-    </div>
+    
+        <ArticleDisplay v-else class="main-body" :articleLists="articlesByAuthor" />
+    
 </template>
 
 <script setup>
@@ -63,6 +63,7 @@ onMounted(async () => {
 }
 
 .main-body {
+   
     margin-top: 20px;
     flex-wrap: wrap;
     justify-content: space-evenly;
