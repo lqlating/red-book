@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Discover from '../components/discover/Discover.vue';
 import Publish from '../components/Publish/Publish.vue';
-import Notify from '../components/Notify/Notify.vue';
+import Notify from '../components/notify/Notify.vue';
 import Me from "../components/me/Me.vue";
 import LikeList from "../components/me/meInfo/LikeList.vue";
 import Note from "../components/me/meInfo/Note.vue";
