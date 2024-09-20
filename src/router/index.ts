@@ -1,12 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Discover from '../components/discover/Discover.vue';
-import Publish from '../components/Publish/Publish.vue';
 import Notify from '../components/notify/Notify.vue';
 import Me from "../components/me/Me.vue";
 import LikeList from "../components/me/meInfo/LikeList.vue";
 import Note from "../components/me/meInfo/Note.vue";
 import StarList from "../components/me/meInfo/StarList.vue";
-import Recommend from '../components/best/Recommend.vue';
 import becomment from '../components/notify/becomment/becomment.vue';
 import like_star from '../components/notify/like_star/like_star.vue';
 import newSubscript from '../components/notify/newSubscript/newSubscript.vue';
