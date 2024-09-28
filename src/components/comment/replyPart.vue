@@ -106,11 +106,8 @@ async function newsubmitComment() {
 }
 
 async function newSubmitSubComment() {
-  await submitSubComment({
-    content: commentText.value,
-    article_id: props.article_id,
-    user_id: user_id.value,
-  });
+  tempSubComment.content = commentText.value
+  await submitSubComment();
   commentText.value = '';
   isEditing.value = false;
 }

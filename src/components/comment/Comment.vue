@@ -74,7 +74,7 @@ const subCommentCount = computed(() => subComments.value.length);
 // 获取用户信息
 const searchUserById = async (userId) => {
   try {
-    const res = await axios.get(`http://localhost:8080/SearchUserById/${userId}`);
+    const res = await axios.get(`http://localhost:8080/api/SearchUserById/${userId}`);
     Object.assign(userInfo, res.data.data);
     userName.value = userInfo[0].username;
     avatar.value = userInfo[0].avatar;
@@ -87,7 +87,7 @@ const searchUserById = async (userId) => {
 const getuserbyCommentid = async (c_id) => {
   if (grandparent_id) {
     try {
-      const res = await axios.get(`http://localhost:8080/getUserByCommentId/${c_id}`);
+      const res = await axios.get(`http://localhost:8080/api/getUserByCommentId/${c_id}`);
       subCommentUserName.value = res.data.data[0].username;
     } catch (error) {
       console.error('加载用户信息失败:', error);
@@ -161,7 +161,6 @@ watch(() => likedCommentIds.value, (newVal) => {
 onMounted(async () => {
   await fetchLikedCommentIds(user_id.value); // 确保获取数据
   isLiked.value = likedCommentIds.value.includes(comment.comment_id);
-  
   searchUserById(comment.user_id);
   loadSubComments();
   if (grandparent_id) {

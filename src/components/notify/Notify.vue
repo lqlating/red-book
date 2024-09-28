@@ -19,12 +19,12 @@ onMounted(() => {
                 active-class="active">
                 评论和@
             </RouterLink>
-            <RouterLink 
+            <!-- <RouterLink 
                 class="operation" 
                 to="/Notify/like_star"
                 active-class="active">
                 赞和收藏
-            </RouterLink>
+            </RouterLink> -->
             <RouterLink 
                 class="operation" 
                 to="/Notify/newSubscript"

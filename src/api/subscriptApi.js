@@ -24,6 +24,10 @@ const subscriptApi = {
     // 查询已经关注该用户的所有人的id
     getUserIdbyTargetId(targetId) {
         return axiosInstance.get(`/getUserIdsByTargetId/${targetId}`);
+    },
+    // 新增接口：查询关注数量
+    countSubscriptionsByUserId(userId) {
+        return axiosInstance.get(`/operation/countSubscriptionsByUserId/${userId}`);
     }
 };
 

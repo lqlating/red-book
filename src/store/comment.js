@@ -19,7 +19,7 @@ export const commentInfoStore = defineStore('comment', () => {
     // 加载根评论
     async function getComments(article_id) {
         try {
-            const res = await axios.get(`http://localhost:8080/getCommentBylikeCount/${article_id}`);
+            const res = await axios.get(`http://localhost:8080/api/getCommentBylikeCount/${article_id}`);
             if (!commentsByArticleId[article_id]) {
                 commentsByArticleId[article_id] = [];
             }
@@ -33,7 +33,7 @@ export const commentInfoStore = defineStore('comment', () => {
     // 获取评论数量
     async function getCommentCount(article_id) {
         try {
-            const res = await axios.get(`http://localhost:8080/getCommentCount/${article_id}`);
+            const res = await axios.get(`http://localhost:8080/api/getCommentCount/${article_id}`);
             commentCountByArticleId[article_id] = res.data;
         } catch (error) {
             console.error('获取评论数量失败:', error);
@@ -43,7 +43,7 @@ export const commentInfoStore = defineStore('comment', () => {
     // 加载子评论
     async function getSubComments(parent_id) {
         try {
-            const res = await axios.get(`http://localhost:8080/getCommentsByParentId/${parent_id}`);
+            const res = await axios.get(`http://localhost:8080/api/getCommentsByParentId/${parent_id}`);
             if (!subCommentsByParentId[parent_id]) {
                 subCommentsByParentId[parent_id] = [];
             }
@@ -57,7 +57,7 @@ export const commentInfoStore = defineStore('comment', () => {
     // 回复根评论
     async function submitComment(comment) {
         try {
-            const response = await axios.post('http://localhost:8080/addComment', comment);
+            const response = await axios.post('http://localhost:8080/api/addComment', comment);
             if (response.data.code === 1) {
                 ElMessage.success('评论添加成功');
                 await getComments(comment.article_id);
@@ -74,14 +74,15 @@ export const commentInfoStore = defineStore('comment', () => {
     // 回复子评论
     async function submitSubComment() {
         try {
-            const response = await axios.post('http://localhost:8080/addComment', tempSubComment);
+            const response = await axios.post('http://localhost:8080/api/addComment', tempSubComment);
             if (response.data.code === 1) {
                 ElMessage.success('评论添加成功');
+                
                 await getSubComments(grandparent_id.value);
                 await getCommentCount(tempSubComment.article_id); // 更新评论数量
                 tempSubComment.content = '';
-                tempSubComment.article_id = null;
-                tempSubComment.user_id = null;
+                // tempSubComment.article_id = null;
+                // tempSubComment.user_id = null;
                 tempSubComment.parent_id = null;
                 grandparent_id.value = null;
             } else {

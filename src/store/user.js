@@ -42,7 +42,7 @@ export const userInfoStore = defineStore('user', () => {
             password: password.value
         };
 
-        axios.post('http://localhost:8080/login', loginRequest)
+        axios.post('http://localhost:8080/api/login', loginRequest)
             .then(({ data }) => {
                 if (data && data.code === 0) {
                     console.error('Error:', data.msg);

@@ -12,7 +12,6 @@ import UserList from './UserList.vue';
 
 const articleData = articleStore();
 const { filterContent, articleLists } = articleData;
-
 const commentStore = commentInfoStore();
 const { getCommentCount, getComments } = commentStore;
 

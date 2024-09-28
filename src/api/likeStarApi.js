@@ -28,9 +28,15 @@ const likeStarApi = {
             operation_type: operationType
         });
     },
+    // 查询粉丝数量
     searchCount(params) {
         return axiosInstance.post('/operation/searchCount', params);
+    },
+    // 新增接口：根据 target_id 数组查询点赞或收藏的数量
+    searchCountByTargetIds(targetIds) {
+        // 直接传递 targetIds 数组
+        return axiosInstance.post('/operation/countByTargetIds', targetIds);
     }
 };
 
-export default likeStarApi;  // 使用 export default 导出
+export default likeStarApi;

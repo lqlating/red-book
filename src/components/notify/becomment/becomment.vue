@@ -30,34 +30,61 @@ function formatDate(publishTime) {
 
 // 获取回复的评论
 async function getReplyComent() {
-    const res = await commentApi.BeReplyComment(id);
-    const comments = res.data.data;
+    try {
+        const res = await commentApi.BeReplyComment(id);
+        const comments = res.data.data;
 
-    for (let comment of comments) {
-        const userRes = await userApi.SearchUserById(comment.user_id);
-        comment.username = userRes.data.data[0].username;
-        comment.avatar = userRes.data.data[0].avatar; // 获取头像并存储到reply_avatar
+        for (let comment of comments) {
+            // 获取用户信息，并进行空值检查
+            const userRes = await userApi.SearchUserById(comment.user_id);
+            if (userRes?.data?.data?.length > 0) {
+                comment.username = userRes.data.data[0].username;
+                comment.avatar = userRes.data.data[0].avatar; // 获取头像并存储到 reply_avatar
+            } else {
+                comment.username = '匿名用户';
+                comment.avatar = ''; // 或者设置为默认头像
+            }
 
-        const bereplyRes = await commentApi.GetCommentById(comment.parent_id);
-        comment.bereply = bereplyRes.data.data[0].content;
+            // 获取被回复的评论，并进行空值检查
+            const bereplyRes = await commentApi.GetCommentById(comment.parent_id);
+            if (bereplyRes?.data?.data?.length > 0) {
+                comment.bereply = bereplyRes.data.data[0].content;
+            } else {
+                comment.bereply = '无内容';
+            }
 
-        const articleRes = await articleApi.getArticleById(comment.article_id);
-        comment.article_bark = articleRes.data.data.img_url; // 假设获取的文章信息是标题
+            // 获取文章信息，并进行空值检查
+            const articleRes = await articleApi.getArticlesByIds([comment.article_id]);
+            if (articleRes?.data?.data?.length > 0) {
+                comment.article_bark = articleRes.data.data[0].img_url; // 假设获取的文章信息是文章封面或标题
+            } else {
+                comment.article_bark = '无文章信息';
+            }
 
-        // 格式化发布的时间
-        comment.formattedTime = formatDate(comment.publish_time);
+            // 格式化发布的时间
+            comment.formattedTime = formatDate(comment.publish_time);
+        }
+
+        replyComments.value = comments;
+    } catch (error) {
+        console.error("请求失败:", error);
     }
-
-    replyComments.value = comments;
 }
 
 onMounted(() => {
     getReplyComent();
 });
 </script>
+
 <template>
     <div class="main-body">
-        <like_comment v-for="replyComment in replyComments" :isComment="isComment" :replyComment="replyComment" :key="replyComment.id" :user_id="id">
+        <like_comment 
+            v-for="replyComment in replyComments" 
+            :isComment="isComment" 
+            :replyComment="replyComment" 
+            :key="replyComment.id" 
+            :user_id="id">
+            
             <template #reply_name>
                 {{ replyComment.username }}
             </template>

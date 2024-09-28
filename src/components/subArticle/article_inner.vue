@@ -44,7 +44,6 @@
   import { commentInfoStore } from "../../store/comment";
   import userApi from "../../api/userApi";
   import subscriptApi from "../../api/subscriptApi";
-  
   const props = defineProps(["article", "article_inner", "close"]);
   
   let {
@@ -60,7 +59,7 @@
   } = props.article;
   
   const commentStore = commentInfoStore();
-  const { getComments, getCommentCount, commentsByArticleId, commentCountByArticleId } = commentStore;
+  const { getComments, getCommentCount, commentsByArticleId, commentCountByArticleId,tempSubComment } = commentStore;
   
   const userStore = userInfoStore();
   const { showLogin, isLogin, targetIds, userThing } = storeToRefs(userStore);
@@ -90,6 +89,8 @@
   }
   
   onMounted(()=>{
+    tempSubComment.article_id = article_id
+    tempSubComment.user_id = userThing.value.id
     loadArticleData()
   });
   

@@ -8,7 +8,7 @@ import StarList from "../components/me/meInfo/StarList.vue";
 import becomment from '../components/notify/becomment/becomment.vue';
 import like_star from '../components/notify/like_star/like_star.vue';
 import newSubscript from '../components/notify/newSubscript/newSubscript.vue';
-
+import Publish from '../components/publish/Publish.vue'
 const router = createRouter({
     history: createWebHistory(),
     routes: [
@@ -20,10 +20,10 @@ const router = createRouter({
             path: '/Discover',
             component: Discover,
         },
-        // {
-        //     path: '/Publish',
-        //     component: Publish
-        // },
+        {
+            path: '/Publish',
+            component: Publish
+        },
         {
             path: '/Notify',
             component: Notify,
@@ -43,7 +43,7 @@ const router = createRouter({
                 {
                     path:'newSubscript',
                     component:newSubscript
-                },
+                }
             ]
         },
         {

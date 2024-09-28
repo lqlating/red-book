@@ -21,7 +21,7 @@ const likeStarStore = useLikeStore();
 let { fetchLikedArticleIds } = likeStarStore;
 let { likedArticleIds } = storeToRefs(likeStarStore);
 
-// 创建一个ref来保存获取到的文章列表
+// 创建一个 ref 来保存获取到的文章列表
 const articles = ref([]);
 
 // 当组件挂载时，检查点赞的文章ID列表是否为空，若为空则调用接口获取
@@ -48,6 +48,5 @@ try {
 <style scoped>
 .main-body {
   margin-top: 20px;
-  
 }
 </style>

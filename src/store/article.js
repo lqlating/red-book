@@ -12,6 +12,7 @@ export const articleStore = defineStore('article', () => {
   async function filterContent(value) {
     try {
       const res = await articleApi.Filtercontent(value);
+      
       Object.assign(articleLists, res.data.data);
 
       // Populate likeCountMap and starCountMap with article_id

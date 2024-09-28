@@ -60,6 +60,7 @@ const likeCount = computed(() => getLikeCountByArticleId(article_id));
 
 // 获取作者信息
 async function getAuthorThing() {
+  // console.log("this place",props.item.author_id)
   const res = await userApi.SearchUserById(props.item.author_id);
   username.value = res.data.data[0].username;
   avatar.value = res.data.data[0].avatar;

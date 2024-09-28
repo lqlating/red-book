@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:8080', // 替换为你的 API 基础 URL
+  baseURL: 'http://localhost:8080/api', // 替换为你的 API 基础 URL
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

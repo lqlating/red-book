@@ -9,6 +9,10 @@ const articleApi = {
     },
     getArticlesByAuthorId(authorId) {  // 新增的接口
         return axiosInstance.get(`/getArticlesByAuthorId/${authorId}`);
+    },
+      // 添加新文章
+      addArticle(article) {
+        return axiosInstance.post('/add', article);
     }
 };
 

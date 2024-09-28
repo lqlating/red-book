@@ -9,16 +9,25 @@
     <div class="mainBody-wrapper">
       <div class="navigate">
         <RouterLink to="/Discover" active-class="active" class="my-txt" @click="setIsSearchFalse">
-          <span class="txt-inner"><img class="icon" src="@/assets/img/House.png">发现</span>
+          <span class="txt-inner">
+            <img class="icon" src="@/assets/img/House.png" alt=""> 发现
+          </span>
         </RouterLink>
-        <a :href="externalLink" target="_blank" :class="['my-txt', isActive ? 'active' : '']">
-          <span class="txt-inner"><img class="icon" src="@/assets/img/shizikuang.png" alt="">发布</span>
-        </a>
+        <RouterLink to="/Publish" active-class="active" class="my-txt">
+  <span class="txt-inner">
+    <img class="icon" src="@/assets/img/shizikuang.png" alt=""> 发布
+  </span>
+</RouterLink>
+
         <RouterLink to="/Notify" active-class="active" class="my-txt">
-          <span class="txt-inner"><img class="icon" src="@/assets/img/ringlingsheng.png" alt="">通知</span>
+          <span class="txt-inner">
+            <img class="icon" src="@/assets/img/ringlingsheng.png" alt=""> 通知
+          </span>
         </RouterLink>
         <RouterLink v-if="isLogin" to="/Me" active-class="active" class="my-txt">
-          <span class="txt-inner"><img class="icon me" :src="userThing.avatar" alt=""> 我</span>
+          <span class="txt-inner">
+            <img class="icon me" :src="userThing.avatar" alt=""> 我
+          </span>
         </RouterLink>
         <div v-if="!isLogin" class="login" @click="showLogin = true">登录</div>
         <div 
@@ -52,8 +61,9 @@ import { userInfoStore } from "../../store/user";
 import { storeToRefs } from 'pinia';
 import { searchStore } from "@/store/search";  // 引入 search store
 import { articleStore } from '../../store/article';
+
 const useArticleStore = articleStore();
-const {filterContent} = useArticleStore
+const { filterContent } = useArticleStore;
 // 引入用户信息 store
 const userStore = userInfoStore();
 const { isLogin, userThing, showLogin } = storeToRefs(userStore);
@@ -126,9 +136,13 @@ const handleOutsideClick = (event) => {
   }
 };
 
-// 监听全局点击事件
+// 页面加载时自动跳转到 "发现" 页面
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick);
+
+  if (route.path !== '/Discover') {
+    router.push('/Discover');
+  }
 });
 </script>
 
@@ -136,6 +150,7 @@ onMounted(() => {
 .main-content {
   width: 1177px;
 }
+
 .outer-overlay {
   position: fixed;
   top: 0;
@@ -234,17 +249,21 @@ img {
   cursor: pointer;
   font-weight: bold;
 }
-.more{
+
+.more {
   margin-top: 330px;
 }
-.more:hover{
+
+.more:hover {
   background-color: #f0f0f0;
 }
-.more_pic{
+
+.more_pic {
   margin-right: 5px;
   width: 20px;
   height: 20px;
 }
+
 .drop-down2 {
   width: 209px;
   height: auto;
@@ -255,17 +274,20 @@ img {
   border: 1px solid #f0f0f0;
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
 }
-.more-inner:hover{
+
+.more-inner:hover {
   background-color: #f0f0f0;
 }
-.more-inner{
+
+.more-inner {
   font-size: 16px;
   padding: 10px;
   margin: 0px;
   border-radius: 10px;
   color: #888888;
 }
-.my-txt:hover{
-  background-color: #f0f0f0
+
+.my-txt:hover {
+  background-color: #f0f0f0;
 }
 </style>

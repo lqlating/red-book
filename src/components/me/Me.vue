@@ -1,22 +1,3 @@
-<script setup lang="ts">
-import { storeToRefs } from 'pinia';
-import { userInfoStore } from "../../store/user";
-import { useRouter } from 'vue-router';
-import { onMounted } from 'vue';
-
-const userStore = userInfoStore();
-const { userThing } = storeToRefs(userStore);
-const { username, email, id, avatar, gender, introduction, fans, subscript } = userThing.value;
-
-const router = useRouter();
-
-onMounted(() => {
-  if (router.currentRoute.value.path === '/Me') {
-    router.push('/Me/Note');
-  }
-});
-</script>
-
 <template>
   <div class="container">
     <div class="main-part">
@@ -28,10 +9,11 @@ onMounted(() => {
         <div class="intro" v-if="introduction == undefined">还没有简介</div>
         <div v-if="gender == '男'"><img class="gender" src="../../assets/img/male.png" alt=""></div>
         <div v-if="gender == '女'"><img class="gender" src="../../assets/img/female.png" alt=""></div>
-        <div class="subscript-thing">
-          <span class="subscript-detail"><span class="subscript-inner">关注</span></span>
-          <span class="subscript-detail"><span class="subscript-inner">粉丝</span></span>
-          <span class="subscript-detail"><span class="subscript-inner">获赞与收藏</span></span>
+
+        <div class="subscript-thing" v-if="!isLoading">
+          <span class="subscript-detail" style="color: #33333399;">关注 {{ userStats.subscriptionsCount }}</span>
+          <span class="subscript-detail" style="color: #33333399;">粉丝 {{ userStats.fansCount }}</span>
+          <span class="subscript-detail" style="color: #33333399;">获赞与收藏 {{ userStats.likesAndStarsCount }}</span>
         </div>
       </span>
     </div>
@@ -49,6 +31,64 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<script setup>
+import { storeToRefs } from 'pinia';
+import { userInfoStore } from "../../store/user";
+import { useRouter } from 'vue-router';
+import { onMounted, ref } from 'vue';
+import likeStarApi from '../../api/likeStarApi';
+import subscriptApi from '../../api/subscriptApi';
+import articleApi from '../../api/articleApi'; // 引入 articleApi
+
+const userStore = userInfoStore();
+const { userThing } = storeToRefs(userStore);
+const { username, email, id, avatar, gender, introduction } = userThing.value;
+
+const router = useRouter();
+const isLoading = ref(true); // 新增一个变量来跟踪加载状态
+
+// 定义 ref 变量来存储数据
+const userStats = ref({
+    fansCount: 0,
+    subscriptionsCount: 0,
+    likesAndStarsCount: 0,
+});
+
+const articles = ref([]); // 新增的容器，用于存放文章数据
+
+onMounted(async () => {
+    if (router.currentRoute.value.path === '/Me') {
+        router.push('/Me/Note');
+    }
+
+    try {
+        // 获取粉丝数量
+        const fansResponse = await subscriptApi.getUserIdbyTargetId(id);
+        userStats.value.fansCount = fansResponse.data.data.length;
+
+        // 获取已订阅的用户数量
+        const subscriptionsResponse = await subscriptApi.getTargetId(id);
+        userStats.value.subscriptionsCount = subscriptionsResponse.data.data.length;
+
+        // 获取用户文章
+        const articlesResponse = await articleApi.getArticlesByAuthorId(id);
+        articles.value = articlesResponse.data.data; // 假设返回的数据为文章数组
+
+        // 提取 target_id 组成数组并调用 searchCount
+        const targetIds = articles.value.map(article => article.article_id);
+        
+        if (targetIds.length > 0) {
+            const likeCountResponse = await likeStarApi.searchCountByTargetIds(targetIds);
+            userStats.value.likesAndStarsCount = likeCountResponse.data.data; // 假设返回的是点赞与收藏的数量
+        }
+
+        isLoading.value = false; // 数据加载完成，关闭加载状态
+    } catch (error) {
+        console.error("请求失败:", error);
+    }
+});
+</script>
 
 <style scoped>
 /* 设置最大高度，并隐藏滚动条 */
@@ -140,11 +180,14 @@ a {
   padding-bottom: 20px;
   display: flex;
   justify-content: center;
-  position: -webkit-sticky;
   position: sticky;
   top: 0;
   z-index: 1000;
   
   background-color: white; /* 确保背景色与页面一致 */
+}
+
+.article-list {
+  margin-top: 20px;
 }
 </style>

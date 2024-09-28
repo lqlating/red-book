@@ -1,15 +1,15 @@
 <script setup>
 import { ref } from 'vue';
 import { commentInfoStore } from '../../../store/comment';
-const commentStore = commentInfoStore()
-const {submitSubComment,tempSubComment} = commentStore
-const props = defineProps(['isComment', 'replyComment','user_id']);
+const commentStore = commentInfoStore();
+const { submitSubComment, tempSubComment } = commentStore;
+const props = defineProps(['isComment', 'replyComment', 'user_id']);
 const isComment = props.isComment;
 const isLiked = ref(false);
 const isReplying = ref(false);
 const replyText = ref("");
-const {article_id,comment_id} = props.replyComment
-console.log(props.user_id,article_id)
+const { article_id, comment_id } = props.replyComment || {};
+
 // 切换点赞状态
 function toggleLike() {
   isLiked.value = !isLiked.value;
@@ -25,17 +25,19 @@ function cancelReply() {
   isReplying.value = false;
   replyText.value = "";
 }
-function submitcomment(){
-    Object.assign(tempSubComment,{
-        content:replyText.value,
-        user_id:props.user_id,
-        article_id:article_id,
-        parent_id:comment_id
-    }),
-    submitSubComment()
-    replyText.value = '',
-    isReplying.value = false
+
+function submitcomment() {
+  Object.assign(tempSubComment, {
+    content: replyText.value,
+    user_id: props.user_id,
+    article_id: article_id,
+    parent_id: comment_id,
+  });
+  submitSubComment();
+  replyText.value = '';
+  isReplying.value = false;
 }
+
 // 处理输入框内容变化
 function handleInput(event) {
   replyText.value = event.target.value;
@@ -43,9 +45,9 @@ function handleInput(event) {
 </script>
 
 <template>
-  <div class="main-body">
+  <div class="main-body" v-if="props.replyComment">
     <span class="avatar">
-      <img class="avatar-inner" :src="props.replyComment.avatar" alt="">
+      <img class="avatar-inner" :src="props.replyComment.avatar" alt="Avatar" />
     </span>
 
     <span class="txt-area">
@@ -54,7 +56,8 @@ function handleInput(event) {
       </div>
       <div class="reply_date">
         <span v-if="isComment">回复</span>
-        <span v-if="!isComment">赞</span>了你的评论 <span><slot name="date"></slot></span>
+        <span v-if="!isComment">赞</span>了你的评论
+        <span><slot name="date"></slot></span>
       </div>
       <div class="reply_txt">
         <slot name="reply_txt"></slot>
@@ -87,10 +90,15 @@ function handleInput(event) {
     </span>
 
     <span class="article-face">
-      <img class="article-inner" :src="props.replyComment.article_bark" alt="">
+      <img class="article-inner" :src="props.replyComment.article_bark" alt="Article Image" />
     </span>
   </div>
-  
+
+  <!-- 当没有任何评论时显示 -->
+  <div v-else>
+    <p>没有任何评论</p>
+  </div>
+
   <div class="separator"></div>
 </template>
 
@@ -145,8 +153,8 @@ function handleInput(event) {
 }
 
 .article-inner {
-  width: 100%;
-  height: 100%;
+  height: auto;
+  width: 100px;
 }
 
 .reply_name {
@@ -249,14 +257,6 @@ function handleInput(event) {
   background-color: #ffffff;
   border: 1px solid #d7d2d3;
   color: #333333cc;
-}
-
-/* 去除 fade 过渡效果 */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
 }
 
 .separator {
