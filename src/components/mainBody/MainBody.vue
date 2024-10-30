@@ -19,12 +19,12 @@
   </span>
 </RouterLink>
 
-        <RouterLink to="/Notify" active-class="active" class="my-txt">
+        <RouterLink to="/Notify/becomment" active-class="active" class="my-txt">
           <span class="txt-inner">
             <img class="icon" src="@/assets/img/ringlingsheng.png" alt=""> 通知
           </span>
         </RouterLink>
-        <RouterLink v-if="isLogin" to="/Me" active-class="active" class="my-txt">
+        <RouterLink v-if="isLogin" to="/Me/Note" active-class="active" class="my-txt">
           <span class="txt-inner">
             <img class="icon me" :src="userThing.avatar" alt=""> 我
           </span>

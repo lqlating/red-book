@@ -90,8 +90,9 @@ function handleInput(event) {
     </span>
 
     <span class="article-face">
-      <img class="article-inner" :src="props.replyComment.article_bark" alt="Article Image" />
-    </span>
+  <img class="article-inner" :src="`data:image/png;base64,${props.replyComment.article_bark}`" alt="Article Image" />
+</span>
+
   </div>
 
   <!-- 当没有任何评论时显示 -->
@@ -146,15 +147,15 @@ function handleInput(event) {
 
 .article-face {
   height: auto;
-  width: 48px;
-  border-radius: 5px;
-  background-color: bisque;
+  width: 80px;
   overflow: hidden;
 }
 
 .article-inner {
+  width: 100%;
   height: auto;
-  width: 100px;
+  object-fit: contain; /* 保持原始比例缩放 */
+
 }
 
 .reply_name {

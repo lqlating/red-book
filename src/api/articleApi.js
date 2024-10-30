@@ -11,7 +11,7 @@ const articleApi = {
         return axiosInstance.get(`/getArticlesByAuthorId/${authorId}`);
     },
       // 添加新文章
-      addArticle(article) {
+    addArticle(article) {
         return axiosInstance.post('/add', article);
     }
 };

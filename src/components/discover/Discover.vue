@@ -130,9 +130,15 @@ onMounted(async () => {
               <div class="card">
                 <!-- 包裹 LazyImg 的过渡效果 -->
                 <transition name="fade">
-                  <!-- 图片的 v-show 绑定加载状态 -->
-                  <LazyImg class="lazy" :url="item.img_url" @load="handleImageLoad(item.article_id)"
-                    :key="item.article_id + '-img'" v-show="imageLoaded[item.article_id]" @click="selectArticle(item)" />
+                  <!-- 将 Base64 编码图片以正确的格式传递给 LazyImg -->
+                  <LazyImg
+                    class="lazy"
+                    :url="`data:image/png;base64,${item.img_url}`"
+                    @load="handleImageLoad(item.article_id)"
+                    :key="item.article_id + '-img'"
+                    v-show="imageLoaded[item.article_id]"
+                    @click="selectArticle(item)"
+                  />
                 </transition>
                 <p class="text" @click="selectArticle(item)">{{ item.title }}</p>
                 <Like_button :item="item" :key="item.article_id + '-like'" :out="true" />

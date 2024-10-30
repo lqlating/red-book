@@ -6,7 +6,7 @@
           <transition name="fade">
             <LazyImg 
               class="lazy" 
-              :url="item.img_url" 
+              :url="`data:image/png;base64,${item.img_url}`" 
               @load="handleImageLoad(item.article_id)"
               :key="item.article_id + '-img'" 
               v-show="imageLoaded[item.article_id]" 
@@ -31,6 +31,7 @@
     />
   </div>
 </template>
+
 
 <script setup>
 import { ref } from 'vue';

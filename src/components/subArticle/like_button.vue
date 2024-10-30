@@ -31,7 +31,7 @@ import { articleStore } from '../../store/article';
 // 获取store实例
 const userStore = userInfoStore();
 const { userThing } = userStore;
-
+const {showLogin,isLogin} = storeToRefs(userStore)
 const likeStore = useLikeStore();
 const { fetchLikedArticleIds, addLike, removeLike } = likeStore;
 const { likedArticleIds } = storeToRefs(likeStore);
@@ -69,7 +69,12 @@ async function getAuthorThing() {
 
 // 点赞/取消点赞功能
 async function toggleLike() {
-  if (isLiked.value) {
+
+  if (!isLogin.value) {
+    
+    showLogin.value = true;
+  }else{
+    if (isLiked.value) {
     await removeLike(userThing.id, article_id);
     if (likeCountMap[article_id] > 0) {
       likeCountMap[article_id] -= 1;
@@ -78,6 +83,8 @@ async function toggleLike() {
     await addLike(userThing.id, article_id);
     likeCountMap[article_id] += 1;
   }
+  }
+  
 }
 
 // 动态计算左边和右边的样式
