@@ -1,14 +1,15 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
-import { articleStore } from '../../store/article'; // 引入文章的 Pinia store
-import { commentInfoStore } from '../../store/comment'; // 引入评论的 Pinia store
-import { searchStore } from '../../store/search'; // 引入搜索 Store
+import { articleStore } from '../../store/article'; // 文章 Store
+import { commentInfoStore } from '../../store/comment'; // 评论 Store
+import { searchStore } from '../../store/search'; // 搜索 Store
 import { LazyImg, Waterfall } from 'vue-waterfall-plugin-next';
 import 'vue-waterfall-plugin-next/dist/style.css';
 import ArticleInner from '../subArticle/article_inner.vue';
 import Like_button from '../subArticle/like_button.vue';
 import { storeToRefs } from 'pinia';
 import UserList from './UserList.vue';
+import { titleStore } from '../../store/title'; // 引入 titleStore
 
 const articleData = articleStore();
 const { filterContent, articleLists } = articleData;
@@ -16,37 +17,25 @@ const commentStore = commentInfoStore();
 const { getCommentCount, getComments } = commentStore;
 
 const searchData = searchStore();
-const { userList } = storeToRefs(searchData);
-const { searchArticleByTitleOrContent, searchUserByUsername } = searchData;
 const { isSearch, searchArticle } = storeToRefs(searchData);
-const selectedArticle = ref(null);
 
-// 用于控制图片加载的过渡效果
+const selectedArticle = ref(null);
 const imageLoaded = ref({});
 
-// 当图片加载完成后触发，更新加载状态
+// 监听图片加载状态
 function handleImageLoad(articleId) {
   imageLoaded.value[articleId] = true;
 }
 
-const titleList = ref([
-  { title: '推荐', value: 'Dressing' },
-  { title: '穿搭', value: 'Dressing' },
-  { title: '美食', value: 'Gastronomy' },
-  { title: '彩妆', value: 'MakeUp' },
-  { title: '影视', value: 'Filmtelevision' },
-  { title: '职场', value: 'Workplace' },
-  { title: '情感', value: 'Emotion' },
-  { title: '家居', value: 'Shome' },
-  { title: '游戏', value: 'Game' },
-  { title: '旅行', value: 'Travel' },
-  { title: '健身', value: 'Fitness' }
-]);
+// 使用 titleStore
+const titleData = titleStore();
+const { titleList, fetchAllTitles } = storeToRefs(titleData);
+const { fetchAllTitles: fetchTitles } = titleData;
 
-// 定义 newTitleList
+// 定义新的标题列表（搜索时）
 const newTitleList = ref([
-  { title: '文章', value: 'Articles' },
-  { title: '用户', value: 'Users' }
+  { title: '文章', value: 'Articles', isActive: false },
+  { title: '用户', value: 'Users', isActive: false }
 ]);
 
 const breakpoints = ref({
@@ -66,71 +55,69 @@ function selectArticle(item) {
   }
 }
 
+// 关闭文章详情
 function closeArticleInner() {
   selectedArticle.value = null;
 }
 
-// 设置激活的标签并过滤文章或搜索
+// 设置激活的分类
 const setActive = (item, value) => {
   if (isSearch.value) {
-    if (value === 'Articles') {
-      searchArticle.value = true;
-    } else if (value === 'Users') {
-      searchArticle.value = false;
-    }
+    searchArticle.value = value === 'Articles';
   } else {
     filterContent(value);
   }
-  // 更新激活状态
+
   const listToUpdate = isSearch.value ? newTitleList.value : titleList.value;
   listToUpdate.forEach(title => {
-    title.isActive = (title === item);
+    title.isActive = title.title === item.title;
   });
 };
 
-// 监听 isSearch 的变化，当切换为 true 时，激活 "文章"
+// 监听 isSearch 变化，切换搜索模式时默认激活 "文章"
 watch(isSearch, (newValue) => {
   if (newValue) {
     const articlesItem = newTitleList.value.find(item => item.value === 'Articles');
     if (articlesItem) {
-      setActive(articlesItem, articlesItem.value); // 自动触发点击事件，使“文章”激活
+      setActive(articlesItem, articlesItem.value);
     }
   }
 });
 
-// 页面挂载时默认加载 "推荐" 文章
+// 页面加载时，获取标题，并默认激活 "言情" 分类
 onMounted(async () => {
-  titleList.value.forEach(item => {
-    item.isActive = (item.title === '推荐');
-  });
-  await filterContent("Dressing");
+  await fetchTitles(); // 获取所有分类
+  const defaultTitle = titleList.value.find(item => item.value === 'Romance');
+  if (defaultTitle) {
+    setActive(defaultTitle, defaultTitle.value);
+  }
 });
 </script>
 
 <template>
   <div class="Discover-wrapper">
     <div class="title">
-      <!-- 根据 isSearch 的状态动态展示 titleList 或 newTitleList -->
-      <span v-for="item in (isSearch ? newTitleList : titleList)" :key="item.title" :class="{ 'title-inner': true, 'active': item.isActive }"
-        @click="setActive(item, item.value)">
+      <!-- 根据 isSearch 切换 titleList 或 newTitleList -->
+      <span
+        v-for="item in (isSearch ? newTitleList : titleList)"
+        :key="item.title"
+        :class="{ 'title-inner': true, 'active': item.isActive }"
+        @click="setActive(item, item.value)"
+      >
         {{ item.title }}
       </span>
     </div>
     <transition name="fade">
       <div class="main-body">
-        <!-- 如果 searchArticle 为 true 表示在搜索文章 -->
+        <!-- 如果在搜索文章 -->
         <template v-if="searchArticle">
-          <!-- 如果文章列表为空，显示“没有相应文章”的提示 -->
           <div v-if="articleLists.length === 0" class="no-articles">
             没有相应文章
           </div>
-          <!-- 否则展示文章列表 -->
           <Waterfall v-else :list="articleLists" :breakpoints="breakpoints" :gutter="25">
             <template #item="{ item }">
               <div class="card">
-                <!-- 包裹 LazyImg 的过渡效果 -->
                 <transition name="fade">
-                  <!-- 将 Base64 编码图片以正确的格式传递给 LazyImg -->
                   <LazyImg
                     class="lazy"
                     :url="`data:image/png;base64,${item.img_url}`"
@@ -146,8 +133,8 @@ onMounted(async () => {
             </template>
           </Waterfall>
         </template>
-        
-        <!-- 如果 searchArticle 为 false，显示 UserList -->
+
+        <!-- 如果搜索的是用户 -->
         <UserList v-else />
       </div>
     </transition>
@@ -156,7 +143,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* 样式保持不变 */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.5s ease;

@@ -182,7 +182,7 @@ a {
   justify-content: center;
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 10;
   
   background-color: white; /* 确保背景色与页面一致 */
 }

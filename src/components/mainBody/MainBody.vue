@@ -8,17 +8,24 @@
 
     <div class="mainBody-wrapper">
       <div class="navigate">
+        <!-- 新增的商场入口 -->
+        
+
         <RouterLink to="/Discover" active-class="active" class="my-txt" @click="setIsSearchFalse">
           <span class="txt-inner">
-            <img class="icon" src="@/assets/img/House.png" alt=""> 发现
+            <img class="icon" src="@/assets/img/House.png" alt=""> 广场
+          </span>
+        </RouterLink>
+        <RouterLink to="/Market" active-class="active" class="my-txt" @click="setIsSearchFalse">
+          <span class="txt-inner">
+            <img class="icon" src="@/assets/img/cart.png" alt=""> 商场
           </span>
         </RouterLink>
         <RouterLink to="/Publish" active-class="active" class="my-txt">
-  <span class="txt-inner">
-    <img class="icon" src="@/assets/img/shizikuang.png" alt=""> 发布
-  </span>
-</RouterLink>
-
+          <span class="txt-inner">
+            <img class="icon" src="@/assets/img/shizikuang.png" alt=""> 发布
+          </span>
+        </RouterLink>
         <RouterLink to="/Notify/becomment" active-class="active" class="my-txt">
           <span class="txt-inner">
             <img class="icon" src="@/assets/img/ringlingsheng.png" alt=""> 通知
@@ -59,16 +66,15 @@ import { useRouter, useRoute } from 'vue-router';
 import Login from "../login/Login.vue";
 import { userInfoStore } from "../../store/user";
 import { storeToRefs } from 'pinia';
-import { searchStore } from "@/store/search";  // 引入 search store
+import { searchStore } from "@/store/search";  
 import { articleStore } from '../../store/article';
 
 const useArticleStore = articleStore();
 const { filterContent } = useArticleStore;
-// 引入用户信息 store
 const userStore = userInfoStore();
 const { isLogin, userThing, showLogin } = storeToRefs(userStore);
 const search = searchStore();
-const { isSearch } = storeToRefs(search);  // 获取 isSearch 变量
+const { isSearch } = storeToRefs(search);  
 
 const router = useRouter();
 const route = useRoute();
@@ -79,26 +85,20 @@ const closeDialog = () => {
 
 const externalLink = "http://localhost:5174/";
 
-// 计算当前路径是否是发布页面的链接
 const isActive = computed(() => route.fullPath === '/Publish');
 
-// 定义一个 ref 来控制 drop-down2 的显示
 const showDrop = ref(false);
-// 定义一个 ref 来保存 drop-down2 的位置
 const dropDownPosition = ref({ top: 0, left: 0 });
 
-// 获取 more 按钮的引用
 const moreButton = ref(null);
 
 const showDropDown = () => {
   showDrop.value = !showDrop.value;
-
-  // 使用 nextTick 在 DOM 更新后获取按钮位置
   nextTick(() => {
     if (moreButton.value) {
       const rect = moreButton.value.getBoundingClientRect();
       dropDownPosition.value = {
-        top: rect.top - 140, // 调整高度使其显示在按钮上方
+        top: rect.top - 200, 
         left: rect.left
       };
     }
@@ -106,40 +106,34 @@ const showDropDown = () => {
 };
 
 const updateShowLogin = (value) => {
-  showLogin.value = value; // 更新 showLogin 的值
+  showLogin.value = value; 
 }
 
-// 设置 isSearch 为 false 的方法
 const setIsSearchFalse = () => {
   isSearch.value = false;
   filterContent("Dressing")
 }
 
-// 监控 isLogin 的变化，当其变为 true 时，跳转到 /Me 路由
 watch(isLogin, (newValue) => {
   if (newValue) {
     router.push('/Me');
   }
 });
 
-// 添加登出方法
 const logout = () => {
   userStore.logout();
   showDrop.value = false;
-  router.push('/Discover'); // 可根据需要跳转到其他页面
+  router.push('/Discover'); 
 };
 
-// 点击下拉框外部时隐藏下拉框
 const handleOutsideClick = (event) => {
   if (showDrop.value && !moreButton.value?.contains(event.target)) {
     showDrop.value = false;
   }
 };
 
-// 页面加载时自动跳转到 "发现" 页面
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick);
-
   if (route.path !== '/Discover') {
     router.push('/Discover');
   }
@@ -157,11 +151,11 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* 半透明黑色遮罩层 */
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 999; /* 使遮罩层在最顶层 */
+  z-index: 999;
 }
 
 .inner-overlay {
@@ -172,8 +166,8 @@ onMounted(() => {
 
 .Login {
   outline: none;
-  width: 400px; /* 登录框的宽度 */
-  height: 240px; /* 登录框的高度 */
+  width: 400px;
+  height: 240px;
   background-color: #fff;
   border-radius: 20px;
 }
@@ -207,12 +201,12 @@ img {
 
 .navigate a {
   text-decoration: none;
-  border-radius: 20px; /* 设置圆角 */
-  color: #333; /* 设置链接颜色 */
+  border-radius: 20px;
+  color: #333;
 }
 
 .navigate a.active {
-  background-color: #f0f0f0; /* 激活时的背景颜色 */
+  background-color: #f0f0f0;
 }
 
 .mainBody-wrapper .navigate .login {
@@ -225,33 +219,32 @@ img {
   padding-left: 10px;
   font-size: 16px;
   display: flex;
-  align-items: center; /* 垂直居中 */
+  align-items: center;
   height: 48px;
   width: 209px;
   margin-bottom: 5px;
-  cursor: pointer; /* 添加鼠标悬停效果 */
+  cursor: pointer;
 }
 
 .my-txt.active {
-  background-color: #f0f0f0; /* 激活时的背景颜色 */
+  background-color: #f0f0f0;
 }
 
 .login {
   background-color: #ff2e4d;
   font-size: 18.4px;
   display: flex;
-  align-items: center; /* 垂直居中 */
+  align-items: center;
   height: 48px;
   width: 219px;
   border-radius: 20px;
-  justify-content: center; /* 水平居中 */
-  align-items: center; /* 垂直居中 */
+  justify-content: center;
   cursor: pointer;
   font-weight: bold;
 }
 
 .more {
-  margin-top: 330px;
+  margin-top: 300px;
 }
 
 .more:hover {
@@ -266,7 +259,6 @@ img {
 
 .drop-down2 {
   width: 209px;
-  height: auto;
   background-color: white;
   border-radius: 10px;
   position: absolute;
@@ -274,18 +266,19 @@ img {
   border: 1px solid #f0f0f0;
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
 }
+.more-inner {
+  font-size: 16px;
+  padding: 10px;
+  border-radius: 10px;
+  color: #888888;
+  margin: 0; /* 去除 p 标签的默认 margin */
+}
 
 .more-inner:hover {
   background-color: #f0f0f0;
 }
 
-.more-inner {
-  font-size: 16px;
-  padding: 10px;
-  margin: 0px;
-  border-radius: 10px;
-  color: #888888;
-}
+
 
 .my-txt:hover {
   background-color: #f0f0f0;

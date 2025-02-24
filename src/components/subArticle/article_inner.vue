@@ -52,6 +52,7 @@ import subscriptApi from "../../api/subscriptApi";
 
 const props = defineProps(["article", "article_inner", "close"]);
 
+// 从 props 解构数据
 let {
   title: articleTitle,
   img_url,
@@ -64,22 +65,24 @@ let {
   address,
 } = props.article;
 
+// Store 的引用
 const commentStore = commentInfoStore();
 const { getComments, getCommentCount, commentsByArticleId, commentCountByArticleId, tempSubComment } = commentStore;
 
 const userStore = userInfoStore();
 const { showLogin, isLogin, targetIds, userThing } = storeToRefs(userStore);
 
+// 状态数据
 const like = ref(false);
 const userInfo = ref({});
 const userName = ref("");
 const avatar = ref("");
+const isOverlayOpen = ref(false); // 控制遮罩层的状态
+
+// 计算属性
 const commentCount = computed(() => commentCountByArticleId[article_id] || 0);
 const comment_content = computed(() => commentsByArticleId[article_id] || []);
 const is_subscript = computed(() => targetIds.value.includes(author_id));
-const isOverlayOpen = ref(false); // 控制遮罩层的状态
-
-// 计算图片的高宽比
 const isTallImage = computed(() => {
   if (img_url) {
     const img = new Image();
@@ -89,25 +92,65 @@ const isTallImage = computed(() => {
   return false;
 });
 
+// 计算 localArticleInner
+const localArticleInner = computed(() => props.article_inner);
+
+// 数据加载逻辑封装
 async function loadArticleData() {
-  userName.value = "";
-  avatar.value = "";
+  try {
+    userName.value = "";
+    avatar.value = "";
 
-  const result = await userApi.SearchUserById(author_id);
-  userInfo.value = result.data.data[0];
-  userName.value = userInfo.value.username;
-  avatar.value = userInfo.value.avatar;
+    const result = await userApi.SearchUserById(author_id);
+    userInfo.value = result.data.data[0];
+    userName.value = userInfo.value.username;
+    avatar.value = userInfo.value.avatar;
 
-  await getComments(article_id);
-  await getCommentCount(article_id);
+    await getComments(article_id);
+    await getCommentCount(article_id);
+  } catch (error) {
+    console.error("加载文章数据失败：", error);
+  }
 }
 
+// 订阅逻辑
+function subscribe() {
+  if (!isLogin.value) {
+    closeArticleInner();
+    showLogin.value = true;
+  } else {
+    if (is_subscript.value) {
+      subscriptApi.deleteSubscript(userThing.value.id, author_id);
+      targetIds.value = targetIds.value.filter((id) => id !== author_id);
+    } else {
+      subscriptApi.insertSubscript(userThing.value.id, author_id);
+      targetIds.value.push(author_id);
+    }
+  }
+}
+
+// 遮罩层逻辑
+function openOverlay() {
+  isOverlayOpen.value = true;
+}
+
+function closeOverlay() {
+  isOverlayOpen.value = false;
+}
+
+// 关闭文章详情的逻辑
+function closeArticleInner() {
+  props.close();
+}
+
+// 生命周期：组件挂载时加载数据
 onMounted(() => {
   tempSubComment.article_id = article_id;
   tempSubComment.user_id = userThing.value.id;
   loadArticleData();
 });
 
+// 监听 props.article 的变化，动态更新数据
 watch(
   () => props.article,
   async (newValue) => {
@@ -124,36 +167,8 @@ watch(
     await loadArticleData();
   }
 );
-
-let localArticleInner = computed(() => props.article_inner);
-
-function subscribe() {
-  if (!isLogin.value) {
-    closeArticleInner();
-    showLogin.value = true;
-  } else {
-    if (is_subscript.value) {
-      subscriptApi.deleteSubscript(userThing.value.id, author_id);
-      targetIds.value = targetIds.value.filter((id) => id !== author_id);
-    } else {
-      subscriptApi.insertSubscript(userThing.value.id, author_id);
-      targetIds.value.push(author_id);
-    }
-  }
-}
-
-function closeArticleInner() {
-  props.close();
-}
-
-function openOverlay() {
-  isOverlayOpen.value = true;
-}
-
-function closeOverlay() {
-  isOverlayOpen.value = false;
-}
 </script>
+
 
 <style scoped>
 .article-inner {
@@ -293,7 +308,7 @@ function closeOverlay() {
   width: 100%;
   height: 100%;
   background-color: rgba(31, 29, 29, 0.5);
-  z-index: 999;
+  z-index: 1999;
 }
 
 .overlay {

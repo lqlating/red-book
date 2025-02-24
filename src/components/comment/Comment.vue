@@ -6,7 +6,7 @@
     <div class="content-wrapper">
       <div class="username">{{ userName }}</div>
       <div class="content">
-        <span v-if="grandparent_id && comment.parent_id != grandparent_id">
+        <span v-if="grandparent_id && comment.parent_id !== grandparent_id">
           回复
           <span class="subCommentUserName">{{ subCommentUserName }}</span>:
         </span>{{ comment.content }}
@@ -15,17 +15,18 @@
       <div class="icons">
         <button class="like" @click="toggleLike">
           <i :class="isLiked ? 'fas fa-heart' : 'far fa-heart'" class="heart"></i>
-          <span class="like_count" v-show="localLikeCount != 0">{{ localLikeCount }}</span>
-          <span class="like_count" v-show="localLikeCount == 0">赞</span>
+          <span class="like_count" v-show="localLikeCount !== 0">{{ localLikeCount }}</span>
+          <span class="like_count" v-show="localLikeCount === 0">赞</span>
         </button>
         <button class="reply-part" @click="handleReplyClick">
           <img class="reply" src="../../assets/img/_ico_reply.png" alt="回复">
-          <span class="commentCount" v-show="subCommentCount != 0">{{ subCommentCount }}</span>
-          <span class="commentCount" v-show="subCommentCount == 0 || grandparent_id">回复</span>
+          <span class="commentCount" v-show="subCommentCount !== 0">{{ subCommentCount }}</span>
+          <span class="commentCount" v-show="subCommentCount === 0 || grandparent_id">回复</span>
         </button>
       </div>
     </div>
   </div>
+
   <div v-if="visibleSubComments.length > 0" class="sub-comments">
     <Comment
       v-for="(subComment, index) in visibleSubComments"
@@ -55,8 +56,9 @@ const commentStore = commentInfoStore();
 const likeStore = useLikeStore();
 
 const user_id = ref(userStore.userThing.id);
-const likedCommentIds = storeToRefs(likeStore).likedCommentIds; // 从 store 获取
+const likedCommentIds = storeToRefs(likeStore).likedCommentIds;
 const { fetchLikedCommentIds } = likeStore;
+
 const props = defineProps(['comment', 'article_id', 'grandparent_id']);
 const { comment, article_id, grandparent_id } = props;
 
@@ -154,12 +156,11 @@ const updateVisibleSubComments = () => {
 // 监听 likedCommentIds 的变化
 watch(() => likedCommentIds.value, (newVal) => {
   isLiked.value = newVal.includes(comment.comment_id);
-  
 });
 
 // 组件挂载时获取用户信息和子评论
 onMounted(async () => {
-  await fetchLikedCommentIds(user_id.value); // 确保获取数据
+  await fetchLikedCommentIds(user_id.value); 
   isLiked.value = likedCommentIds.value.includes(comment.comment_id);
   searchUserById(comment.user_id);
   loadSubComments();
@@ -170,7 +171,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* 你的样式代码 */
 .main-area {
   display: flex;
   align-items: flex-start;
@@ -228,7 +228,7 @@ button {
 
 button img,
 button .heart {
-  width: 16px; /* 设定与回复图标一致的大小 */
+  width: 16px;
   height: 16px;
   margin-right: 5px;
 }
@@ -242,7 +242,7 @@ button .heart {
 .heart {
   margin-top: 1px;
   font-size: 15px;
-  color: red; /* 将心形图标的颜色设置为红色 */
+  color: red;
 }
 
 .reply {
@@ -278,9 +278,11 @@ button .heart {
 .subCommentUserName {
   color: #33333399;
 }
+
 .like_count {
   margin-left: 5px;
 }
+
 .show-more {
   font-size: 14px;
   color: #13386c;
@@ -289,7 +291,6 @@ button .heart {
   cursor: pointer;
   text-align: left;
   display: block;
-  margin-left: 32px;
+  margin-top: 10px;
 }
-
 </style>
