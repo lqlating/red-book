@@ -10,6 +10,7 @@ import like_star from '../components/notify/like_star/like_star.vue';
 import newSubscript from '../components/notify/newSubscript/newSubscript.vue';
 import Publish from '../components/publish/Publish.vue';
 import Market from '../components/market/Market.vue';
+import Cart from '../components/cart/Cart.vue'; // 导入购物车组件
 
 const router = createRouter({
     history: createWebHistory(),
@@ -19,8 +20,12 @@ const router = createRouter({
             redirect: '/Discover' // 让首页默认进入 Discover
         },
         {
-            path: '/Market', // 确保 Market 有独立的路由
+            path: '/Market', // 商场页面
             component: Market
+        },
+        {
+            path: '/Cart', // 购物车页面
+            component: Cart
         },
         {
             path: '/Discover',

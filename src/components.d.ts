@@ -10,6 +10,7 @@ declare module 'vue' {
     Article_inner: typeof import('./components/subArticle/article_inner.vue')['default']
     ArticleDisplay: typeof import('./components/discover/ArticleDisplay.vue')['default']
     Becomment: typeof import('./components/notify/becomment/becomment.vue')['default']
+    Card: typeof import('./components/cart/card/card.vue')['default']
     Cart: typeof import('./components/cart/cart.vue')['default']
     Chlid: typeof import('./components/child/Chlid.vue')['default']
     Comment: typeof import('./components/comment/Comment.vue')['default']

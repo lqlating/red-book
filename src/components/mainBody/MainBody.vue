@@ -10,7 +10,6 @@
       <div class="navigate">
         <!-- 新增的商场入口 -->
         
-
         <RouterLink to="/Discover" active-class="active" class="my-txt" @click="setIsSearchFalse">
           <span class="txt-inner">
             <img class="icon" src="@/assets/img/House.png" alt=""> 广场
@@ -18,7 +17,12 @@
         </RouterLink>
         <RouterLink to="/Market" active-class="active" class="my-txt" @click="setIsSearchFalse">
           <span class="txt-inner">
-            <img class="icon" src="@/assets/img/cart.png" alt=""> 商场
+            <img class="icon" src="@/assets/img/wallet.png" alt=""> 商场
+          </span>
+        </RouterLink>
+        <RouterLink to="/Cart" active-class="active" class="my-txt" @click="setIsSearchFalse">
+          <span class="txt-inner">
+            <img class="icon" src="@/assets/img/cart.png" alt=""> 购物车
           </span>
         </RouterLink>
         <RouterLink to="/Publish" active-class="active" class="my-txt">
@@ -266,19 +270,17 @@ img {
   border: 1px solid #f0f0f0;
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
 }
+
 .more-inner {
   font-size: 16px;
   padding: 10px;
   border-radius: 10px;
   color: #888888;
-  margin: 0; /* 去除 p 标签的默认 margin */
 }
 
 .more-inner:hover {
   background-color: #f0f0f0;
 }
-
-
 
 .my-txt:hover {
   background-color: #f0f0f0;
