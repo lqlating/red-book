@@ -14,25 +14,19 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, ref, watch } from "vue";
+import { defineProps, defineEmits, defineModel } from "vue";
 
 const props = defineProps({
   image: String,
   title: String,
   author: String,
   price: Number,
-  selected: Boolean, // 接收父组件传递的选中状态
   index: Number,
 });
 
-const emit = defineEmits(["update:selected", "remove-item"]);
+const selected = defineModel("selected", { type: Boolean });
 
-const selected = ref(props.selected);
-
-// 监听 selected 的变化，通知父组件更新状态
-watch(selected, (newValue) => {
-  emit("update:selected", newValue);
-});
+const emit = defineEmits(["remove-item"]);
 
 // 删除当前商品
 const removeFromCart = () => {
@@ -44,7 +38,7 @@ const removeFromCart = () => {
 .card {
   display: flex;
   align-items: center;
-  width: 800px; /* 增大卡片宽度 */
+  width: 800px;
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -60,7 +54,7 @@ const removeFromCart = () => {
 }
 
 .image-container {
-  width: 120px; /* 增大图片区域 */
+  width: 120px;
   height: 120px;
   overflow: hidden;
   display: flex;
@@ -82,7 +76,7 @@ const removeFromCart = () => {
 }
 
 .book-title {
-  font-size: 16px; /* 增大标题字体 */
+  font-size: 16px;
   font-weight: bold;
   color: #333;
   margin-bottom: 4px;
@@ -92,7 +86,7 @@ const removeFromCart = () => {
 }
 
 .book-author {
-  font-size: 14px; /* 增大作者字体 */
+  font-size: 14px;
   color: #777;
   margin-bottom: 4px;
 }

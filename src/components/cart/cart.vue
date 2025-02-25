@@ -21,12 +21,11 @@
           <Card
             v-for="(item, index) in cartItems"
             :key="index"
+            v-model:selected="cartItems[index].selected"
             :image="item.image"
             :title="item.title"
             :author="item.author"
             :price="item.price"
-            :selected="item.selected"
-            @update:selected="updateItemSelected(index, $event)"
             @remove-item="removeItem(index)"
           />
         </div>
@@ -53,8 +52,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
-import Card from "./card/card.vue";
+import { ref, computed } from "vue";
+import Card from "./card.vue";
 
 const cartItems = ref([
   { image: "book1.jpg", title: "书籍 A", author: "作者 A", price: 100, selected: false },
@@ -77,19 +76,11 @@ const totalPrice = computed(() => selectedItems.value.reduce((sum, item) => sum 
 const selectAll = computed({
   get: () => cartItems.value.length > 0 && cartItems.value.every(item => item.selected),
   set: (value) => {
-    cartItems.value.forEach(item => (item.selected = value));
+    cartItems.value.forEach((item, index) => {
+      cartItems.value[index] = { ...item, selected: value };
+    });
   },
 });
-
-// 监听 selectAll 的变化，手动更新每个 Card.vue 的 selected 状态
-watch(selectAll, (newValue) => {
-  cartItems.value.forEach(item => (item.selected = newValue));
-});
-
-// 更新单个商品的选中状态
-const updateItemSelected = (index, selected) => {
-  cartItems.value[index].selected = selected;
-};
 
 // 删除单个商品
 const removeItem = (index) => {
@@ -119,6 +110,7 @@ const scrollToTop = () => {
   }
 };
 </script>
+
 <style scoped>
 .cart-container {
   display: flex;
@@ -142,11 +134,11 @@ const scrollToTop = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%; /* 让它和 cart-list 宽度一致 */
+  width: 100%;
   padding: 10px;
   border-radius: 6px;
   box-sizing: border-box;
-  border: 1px solid #ddd; /* 更细的边框 */
+  border: 1px solid #ddd;
 }
 
 .header-left {
