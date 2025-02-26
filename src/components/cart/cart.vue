@@ -53,8 +53,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import Card from "./card.vue";
-
+import Card from "./card/card.vue";
 const cartItems = ref([
   { image: "book1.jpg", title: "书籍 A", author: "作者 A", price: 100, selected: false },
   { image: "book2.jpg", title: "书籍 B", author: "作者 B", price: 120, selected: false },
