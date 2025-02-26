@@ -1,27 +1,31 @@
 <template>
     <div class="book-item" @click="$emit('click')">
-      <img :src="book.image" alt="书籍封面" class="book-image" />
-      <div class="book-info">
-        <p class="book-title">{{ book.title }}</p>
-        <p class="book-author">{{ book.author }}</p>
-        <p class="book-price">¥{{ book.price }}</p>
-      </div>
+        <img :src="book.image" alt="书籍封面" class="book-image" />
+        <div class="book-info">
+            <p class="book-title">{{ book.title }}</p>
+            <p class="book-author">{{ book.author }}</p>
+            <p class="book-price">¥{{ book.price }}</p>
+        </div>
     </div>
-  </template>
-  
-  <script setup>
-  import {titleStore} from "../../../store/title";
-  console.log(titleStore.titleList.value)[0];
-  defineProps({
+</template>
+
+<script setup>
+import { titleStore } from "../../../store/title";
+const titleData = titleStore();
+
+const { titleList, fetchAllTitles } = storeToRefs(titleData);
+console.log(titleList.value);
+
+defineProps({
     book: {
-      type: Object,
-      required: true, // 确保 book 是必传的
+        type: Object,
+        required: true, // 确保 book 是必传的
     },
-  });
-  </script>
-  
-  <style scoped>
-  .book-item {
+});
+</script>
+
+<style scoped>
+.book-item {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -30,53 +34,61 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     cursor: pointer;
-    overflow: hidden; /* 防止内容溢出 */
-    height: 100%; /* 确保卡片高度充满 */
-  }
-  
-  .book-item:hover {
+    overflow: hidden;
+    /* 防止内容溢出 */
+    height: 100%;
+    /* 确保卡片高度充满 */
+}
+
+.book-item:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-  }
-  
-  .book-image {
+}
+
+.book-image {
     width: 100%;
     height: 200px;
     object-fit: cover;
-    border-radius: 12px 12px 0 0; /* 圆角仅在上方 */
-  }
-  
-  .book-info {
+    border-radius: 12px 12px 0 0;
+    /* 圆角仅在上方 */
+}
+
+.book-info {
     padding: 16px;
     text-align: center;
     width: 100%;
-    box-sizing: border-box; /* 防止 padding 影响宽度 */
-    background: white; /* 确保背景为白色 */
-  }
-  
-  .book-title {
+    box-sizing: border-box;
+    /* 防止 padding 影响宽度 */
+    background: white;
+    /* 确保背景为白色 */
+}
+
+.book-title {
     font-size: 16px;
     font-weight: 600;
-    color: #333; /* 确保文字颜色可见 */
+    color: #333;
+    /* 确保文字颜色可见 */
     margin-bottom: 8px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-  
-  .book-author {
+}
+
+.book-author {
     font-size: 14px;
-    color: #666; /* 确保文字颜色可见 */
+    color: #666;
+    /* 确保文字颜色可见 */
     margin-bottom: 8px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-  
-  .book-price {
+}
+
+.book-price {
     font-size: 18px;
     font-weight: bold;
-    color: #e74c3c; /* 确保文字颜色可见 */
+    color: #e74c3c;
+    /* 确保文字颜色可见 */
     margin-top: 8px;
-  }
-  </style>
+}
+</style>
