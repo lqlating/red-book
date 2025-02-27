@@ -14,7 +14,6 @@ import { titleStore } from "../../../store/title";
 const titleData = titleStore();
 
 const { titleList, fetchAllTitles } = storeToRefs(titleData);
-console.log(titleList.value);
 
 defineProps({
     book: {

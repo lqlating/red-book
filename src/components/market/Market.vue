@@ -1,26 +1,43 @@
 <template>
-  <div class="book-list">
-    <!-- 遍历书籍列表 -->
-    <book-item
-      v-for="(book, index) in books"
-      :key="index"
-      :book="book"
-      @click="openBookDetail(book)"
-    />
+  <div class="market-wrapper">
+    <!-- 导航栏 -->
+    <div class="title">
+      <span
+        v-for="item in titleList"
+        :key="item.title"
+        :class="{ 'title-inner': true, 'active': item.isActive }"
+        @click="setActive(item, item.value)"
+      >
+        {{ item.title }}
+      </span>
+    </div>
 
-    <!-- 书籍详情页面 -->
-    <transition name="fade">
-      <div v-if="selectedBook" class="overlay" @click.self="closeBookDetail">
-        <book-detail :book="selectedBook" @close="closeBookDetail" />
-      </div>
-    </transition>
+    <!-- 书籍列表 -->
+    <div class="book-list">
+      <!-- 遍历书籍列表 -->
+      <book-item
+        v-for="(book, index) in books"
+        :key="index"
+        :book="book"
+        @click="openBookDetail(book)"
+      />
+
+      <!-- 书籍详情页面 -->
+      <transition name="fade">
+        <div v-if="selectedBook" class="overlay" @click.self="closeBookDetail">
+          <book-detail :book="selectedBook" @close="closeBookDetail" />
+        </div>
+      </transition>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted, watch, nextTick } from "vue";
 import BookItem from "./book_item/book_item.vue";
 import BookDetail from "./book_detail/book_detail.vue";
+import { titleStore } from "../../store/title";
+import { bookStore } from "../../store/books"; // 引入 bookStore
 
 // 书籍数据
 const books = [
@@ -78,18 +95,77 @@ const openBookDetail = (book) => {
 const closeBookDetail = () => {
   selectedBook.value = null;
 };
+
+// 使用 titleStore
+const titleData = titleStore();
+const { titleList, fetchAllTitles } = titleData;
+
+// 使用 bookStore
+const bookData = bookStore();
+const { fetchBooksByType } = bookData;
+const { bookLists } = storeToRefs(bookData);
+
+// 设置激活的分类
+const setActive = (item, value) => {
+  titleList.forEach((title) => {
+    title.isActive = title.title === item.title;
+  });
+};
+
+// 页面加载时，获取标题并调用 fetchBooksByType
+onMounted(async () => {
+  await fetchAllTitles();
+  if (titleList.length > 0) {
+    setActive(titleList[0], titleList[0].value); // 默认激活第一个分类
+  }
+
+  // 调用 fetchBooksByType，传入参数 "Romance"
+  await fetchBooksByType("Romance");
+  
+  console.log(bookLists.value[0].book_img);
+  
+});
+
 </script>
 
 <style scoped>
+.market-wrapper {
+  width: 100%;
+}
+
+/* 导航栏样式 */
+.title {
+  display: inline-flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.title-inner {
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 64px;
+  height: 40px;
+  border-radius: 20px;
+  font-weight: normal;
+  transition: font-weight 0.3s ease;
+}
+
+.title-inner.active {
+  background-color: #f0f0f0;
+  font-weight: bold;
+}
+
 /* 书籍列表布局 */
 .book-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* 自适应列数 */
-  gap: 20px; /* 卡片之间的间距 */
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
   padding: 20px;
-  width: 100%; /* 确保宽度充满 */
-  box-sizing: border-box; /* 防止 padding 影响宽度 */
-  background: #f8f9fa; /* 添加背景色 */
+  width: 100%;
+  box-sizing: border-box;
+  background: #f8f9fa;
 }
 
 /* 遮罩层 */
