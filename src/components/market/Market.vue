@@ -14,7 +14,14 @@
 
     <!-- 书籍列表（瀑布流布局） -->
     <div class="book-list-container">
-      <div class="book-list-masonry">
+      <!-- 加载指示器 -->
+      <div v-if="isLoading" class="loading-indicator">
+        <div class="spinner"></div>
+        <p>加载中...</p>
+      </div>
+
+      <!-- 书籍列表 -->
+      <transition-group name="fade-masonry" tag="div" class="book-list-masonry">
         <div
           v-for="book in bookLists"
           :key="book.book_id"
@@ -37,7 +44,7 @@
             <p class="book-price">￥{{ book.book_price }}</p>
           </div>
         </div>
-      </div>
+      </transition-group>
     </div>
 
     <!-- 回顶部按钮 -->
@@ -90,6 +97,9 @@ const bookData = bookStore();
 const { fetchBooksByType } = bookData;
 const { bookLists } = storeToRefs(bookData);
 
+// 加载状态
+const isLoading = ref(false);
+
 // 设置激活的分类并获取书籍数据
 const setActive = async (item, value) => {
   // 设置激活的分类
@@ -97,8 +107,14 @@ const setActive = async (item, value) => {
     title.isActive = title.title === item.title;
   });
 
+  // 显示加载指示器
+  isLoading.value = true;
+
   // 根据分类的 value 重新获取书籍数据
   await fetchBooksByType(value);
+
+  // 隐藏加载指示器
+  isLoading.value = false;
 };
 
 // 监听滚动控制回到顶部按钮的显示
@@ -128,7 +144,6 @@ onUnmounted(() => {
   window.removeEventListener("scroll", handleScroll);
 });
 </script>
-
 
 <style scoped>
 .market-wrapper {
@@ -294,5 +309,54 @@ onUnmounted(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* 书籍列表过渡效果 */
+.fade-masonry-enter-active,
+.fade-masonry-leave-active {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.fade-masonry-enter-from,
+.fade-masonry-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.fade-masonry-leave-active {
+  position: absolute; /* 确保离开的元素不会影响布局 */
+}
+
+/* 加载指示器样式 */
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-indicator p {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #666;
 }
 </style>
