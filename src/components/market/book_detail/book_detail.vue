@@ -57,15 +57,11 @@ const error = ref(null); // 错误信息
 // 根据 seller_id 获取卖家信息
 const fetchSellerInfo = async () => {
   try {
-    console.log("seller_id:", props.book.seller_id);
     const response = await userApi.SearchUserById(props.book.seller_id);
-    console.log("API Response:", response.data.data);
-    console.log("response.data type:", typeof response.data);
-    console.log("response.data length:", response);
+    
 
     if (response.data.code === 1 && response.data.data.length > 0) {
       seller.value = response.data.data[0]; // 获取第一个用户信息
-      console.log("Seller Info:", seller.value); // 打印卖家信息
     } else {
       throw new Error("未找到卖家信息");
     }

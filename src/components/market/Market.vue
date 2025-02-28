@@ -72,7 +72,7 @@ const openBookDetail = (book) => {
     author: book.book_writer,
     price: book.book_price,
     description: book.book_descripe,
-    seller_id:book.book_seller_id
+    seller_id: book.book_seller_id,
   };
 };
 
@@ -90,11 +90,15 @@ const bookData = bookStore();
 const { fetchBooksByType } = bookData;
 const { bookLists } = storeToRefs(bookData);
 
-// 设置激活的分类
-const setActive = (item, value) => {
+// 设置激活的分类并获取书籍数据
+const setActive = async (item, value) => {
+  // 设置激活的分类
   titleList.forEach((title) => {
     title.isActive = title.title === item.title;
   });
+
+  // 根据分类的 value 重新获取书籍数据
+  await fetchBooksByType(value);
 };
 
 // 监听滚动控制回到顶部按钮的显示
@@ -111,12 +115,11 @@ const scrollToTop = () => {
 // 绑定和解绑滚动监听
 onMounted(async () => {
   await fetchAllTitles();
-  if (titleList.length > 0) {
-    setActive(titleList[0], titleList[0].value);
-  }
 
-  await fetchBooksByType("Romance");
-  console.log("bookLists:", bookLists.value);
+  // 默认加载第一个分类的书籍
+  if (titleList.length > 0) {
+    await setActive(titleList[0], titleList[0].value);
+  }
 
   window.addEventListener("scroll", handleScroll);
 });
@@ -125,6 +128,7 @@ onUnmounted(() => {
   window.removeEventListener("scroll", handleScroll);
 });
 </script>
+
 
 <style scoped>
 .market-wrapper {
