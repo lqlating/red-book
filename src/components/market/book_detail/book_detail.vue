@@ -20,10 +20,12 @@
       </p>
 
       <!-- 卖家信息 -->
-      <div class="seller-info">
-        <img :src="book.sellerAvatar" alt="卖家头像" class="seller-avatar" />
-        <p class="seller-name">{{ book.sellerName }}</p>
+      <div v-if="isLoading" class="seller-loading">加载卖家信息中...</div>
+      <div v-else-if="seller" class="seller-info">
+        <img :src="seller.avatar" alt="卖家头像" class="seller-avatar" />
+        <p class="seller-name">{{ seller.username }}</p>
       </div>
+      <div v-else class="seller-error">获取卖家信息失败</div>
 
       <!-- 分割线 -->
       <div class="divider"></div>
@@ -41,8 +43,43 @@
 </template>
 
 <script setup>
-defineProps({
-  book: Object,
+import { ref, onMounted } from "vue";
+import userApi from "../../../api/userApi";
+
+const props = defineProps({
+  book: Object, // 接收 book 对象，其中包含 seller_id
+});
+
+const seller = ref(null); // 卖家信息
+const isLoading = ref(true); // 加载状态
+const error = ref(null); // 错误信息
+
+// 根据 seller_id 获取卖家信息
+const fetchSellerInfo = async () => {
+  try {
+    console.log("seller_id:", props.book.seller_id);
+    const response = await userApi.SearchUserById(props.book.seller_id);
+    console.log("API Response:", response.data.data);
+    console.log("response.data type:", typeof response.data);
+    console.log("response.data length:", response);
+
+    if (response.data.code === 1 && response.data.data.length > 0) {
+      seller.value = response.data.data[0]; // 获取第一个用户信息
+      console.log("Seller Info:", seller.value); // 打印卖家信息
+    } else {
+      throw new Error("未找到卖家信息");
+    }
+  } catch (err) {
+    console.error("API Error:", err);
+    error.value = err.message || "获取卖家信息失败";
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// 组件加载时调用 API
+onMounted(() => {
+  fetchSellerInfo();
 });
 </script>
 
@@ -137,6 +174,12 @@ defineProps({
   font-size: 14px;
   font-weight: 600;
   color: #444;
+}
+
+.seller-loading {
+  font-size: 14px;
+  color: #888;
+  margin-top: 12px;
 }
 
 /* 分割线 */

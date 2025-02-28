@@ -12,83 +12,68 @@
       </span>
     </div>
 
-    <!-- 书籍列表 -->
-    <div class="book-list">
-      <!-- 遍历书籍列表 -->
-      <book-item
-        v-for="(book, index) in books"
-        :key="index"
-        :book="book"
-        @click="openBookDetail(book)"
-      />
+    <!-- 书籍列表（瀑布流布局） -->
+    <div class="book-list-container">
+      <div class="book-list-masonry">
+        <div
+          v-for="book in bookLists"
+          :key="book.book_id"
+          class="book-item"
+          @click="openBookDetail(book)"
+        >
+          <!-- 书籍图片 -->
+          <img
+            v-if="book.book_img"
+            :src="`data:image/jpeg;base64,${book.book_img}`"
+            alt="book cover"
+            class="book-image"
+          />
+          <div v-else class="book-image-placeholder">暂无图片</div>
 
-      <!-- 书籍详情页面 -->
-      <transition name="fade">
-        <div v-if="selectedBook" class="overlay" @click.self="closeBookDetail">
-          <book-detail :book="selectedBook" @close="closeBookDetail" />
+          <!-- 书籍信息 -->
+          <div class="book-info">
+            <h3 class="book-title">{{ book.book_title }}</h3>
+            <p class="book-author">{{ book.book_writer }}</p>
+            <p class="book-price">￥{{ book.book_price }}</p>
+          </div>
         </div>
-      </transition>
+      </div>
     </div>
+
+    <!-- 回顶部按钮 -->
+    <button class="back-to-top" v-show="showBackToTop" @click="scrollToTop">
+      <span class="arrow">▲</span>
+    </button>
+
+    <!-- 书籍详情页面 -->
+    <transition name="fade">
+      <div v-if="selectedBook" class="overlay" @click.self="closeBookDetail">
+        <book-detail :book="selectedBook" @close="closeBookDetail" />
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, nextTick } from "vue";
-import BookItem from "./book_item/book_item.vue";
+import { ref, onMounted, onUnmounted } from "vue";
+import { storeToRefs } from "pinia";
 import BookDetail from "./book_detail/book_detail.vue";
 import { titleStore } from "../../store/title";
-import { bookStore } from "../../store/books"; // 引入 bookStore
-
-// 书籍数据
-const books = [
-  {
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2s2ZurcnSji8iPe4phdEPiplzeGMRH1iwbA&s",
-    title: "深入浅出Vue.js",
-    author: "Evan You",
-    price: "59.00",
-    sellerName: "张三",
-    sellerAvatar: "seller1.jpg",
-  },
-  {
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2s2ZurcnSji8iPe4phdEPiplzeGMRH1iwbA&s",
-    title: "JavaScript高级程序设计",
-    author: "Nicholas C. Zakas",
-    price: "79.00",
-    sellerName: "李四",
-    sellerAvatar: "seller2.jpg",
-  },
-  {
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2s2ZurcnSji8iPe4phdEPiplzeGMRH1iwbA&s",
-    title: "计算机网络",
-    author: "谢希仁",
-    price: "45.00",
-    sellerName: "王五",
-    sellerAvatar: "seller3.jpg",
-  },
-  {
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2s2ZurcnSji8iPe4phdEPiplzeGMRH1iwbA&s",
-    title: "数据结构与算法",
-    author: "Robert Lafore",
-    price: "68.00",
-    sellerName: "赵六",
-    sellerAvatar: "seller4.jpg",
-  },
-  {
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2s2ZurcnSji8iPe4phdEPiplzeGMRH1iwbA&s",
-    title: "算法导论",
-    author: "Thomas H. Cormen",
-    price: "120.00",
-    sellerName: "孙七",
-    sellerAvatar: "seller5.jpg",
-  },
-];
+import { bookStore } from "../../store/books";
 
 // 选中的书籍
 const selectedBook = ref(null);
 
 // 打开书籍详情
 const openBookDetail = (book) => {
-  selectedBook.value = book;
+  selectedBook.value = {
+    image: `data:image/jpeg;base64,${book.book_img}`,
+    title: book.book_title,
+    author: book.book_writer,
+    price: book.book_price,
+    description: book.book_descripe,
+    seller_id:book.book_seller_id
+  };
 };
 
 // 关闭书籍详情
@@ -112,20 +97,33 @@ const setActive = (item, value) => {
   });
 };
 
-// 页面加载时，获取标题并调用 fetchBooksByType
+// 监听滚动控制回到顶部按钮的显示
+const showBackToTop = ref(false);
+const handleScroll = () => {
+  showBackToTop.value = window.scrollY > 300;
+};
+
+// 回到顶部
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+// 绑定和解绑滚动监听
 onMounted(async () => {
   await fetchAllTitles();
   if (titleList.length > 0) {
-    setActive(titleList[0], titleList[0].value); // 默认激活第一个分类
+    setActive(titleList[0], titleList[0].value);
   }
 
-  // 调用 fetchBooksByType，传入参数 "Romance"
   await fetchBooksByType("Romance");
-  
-  console.log(bookLists.value[0].book_img);
-  
+  console.log("bookLists:", bookLists.value);
+
+  window.addEventListener("scroll", handleScroll);
 });
 
+onUnmounted(() => {
+  window.removeEventListener("scroll", handleScroll);
+});
 </script>
 
 <style scoped>
@@ -157,15 +155,117 @@ onMounted(async () => {
   font-weight: bold;
 }
 
-/* 书籍列表布局 */
-.book-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+/* 书籍列表容器（固定高度 + 滚动隐藏） */
+.book-list-container {
+  max-height: 600px;
+  overflow-y: auto;
+  position: relative;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 90%, rgba(0, 0, 0, 0));
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 90%, rgba(0, 0, 0, 0));
+}
+
+/* 隐藏滚动条 */
+.book-list-container::-webkit-scrollbar {
+  width: 0;
+  display: none;
+}
+
+/* 瀑布流布局 */
+.book-list-masonry {
+  column-count: 4; /* 分为 4 列 */
+  column-gap: 20px; /* 列间距 */
   padding: 20px;
+}
+
+/* 书籍项样式 */
+.book-item {
+  break-inside: avoid; /* 防止内容被分割 */
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+  cursor: pointer;
+  margin-bottom: 20px; /* 书籍项之间的间距 */
+}
+
+.book-item:hover {
+  transform: translateY(-5px);
+}
+
+/* 书籍图片 */
+.book-image {
   width: 100%;
-  box-sizing: border-box;
-  background: #f8f9fa;
+  height: auto;
+  display: block;
+}
+
+.book-image-placeholder {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  color: #888;
+  font-size: 14px;
+}
+
+/* 书籍信息 */
+.book-info {
+  padding: 16px;
+}
+
+.book-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin: 0 0 8px;
+}
+
+.book-author {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 8px;
+}
+
+.book-price {
+  font-size: 16px;
+  color: #e74c3c;
+  font-weight: bold;
+  margin: 0;
+}
+
+/* 回到顶部按钮 */
+.back-to-top {
+  position: fixed;
+  bottom: 40px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  background: rgba(128, 128, 128, 0.7); /* 半透明灰色 */
+  color: #fff;
+  font-size: 20px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.back-to-top:hover {
+  background: rgba(128, 128, 128, 0.9); /* 悬停时加深颜色 */
+}
+
+.back-to-top:active {
+  transform: scale(0.9);
+}
+
+.arrow {
+  font-size: 24px;
+  transform: translateY(-2px); /* 调整箭头位置 */
 }
 
 /* 遮罩层 */

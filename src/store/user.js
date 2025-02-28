@@ -107,7 +107,7 @@ export const userInfoStore = defineStore('user', () => {
 const insertSubscript = async (authorId) => {
     try {
         // 防止用户关注自己
-        if (authorId == userThing.id) {
+        if (authorId === userThing.id) {
             ElMessage.warning("不能关注自己！");
             return; // 退出函数，避免继续执行
         }
