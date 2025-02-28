@@ -191,9 +191,36 @@ onUnmounted(() => {
 
 /* 瀑布流布局 */
 .book-list-masonry {
-  column-count: 4; /* 分为 4 列 */
-  column-gap: 20px; /* 列间距 */
+  column-gap: 20px; /* 默认列间距 */
   padding: 20px;
+}
+
+/* 大屏幕：4 列 */
+@media (min-width: 1200px) {
+  .book-list-masonry {
+    column-count: 4;
+  }
+}
+
+/* 中等屏幕：3 列 */
+@media (min-width: 800px) and (max-width: 1199px) {
+  .book-list-masonry {
+    column-count: 3;
+  }
+}
+
+/* 小屏幕：2 列 */
+@media (min-width: 500px) and (max-width: 799px) {
+  .book-list-masonry {
+    column-count: 2;
+  }
+}
+
+/* 超小屏幕：1 列 */
+@media (max-width: 499px) {
+  .book-list-masonry {
+    column-count: 1;
+  }
 }
 
 /* 书籍项样式 */

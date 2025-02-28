@@ -10,6 +10,11 @@ import Like_button from '../subArticle/like_button.vue';
 import { storeToRefs } from 'pinia';
 import UserList from './UserList.vue';
 import { titleStore } from '../../store/title'; // 引入 titleStore
+import { userInfoStore } from '../../store/user'; // 引入 userInfoStore
+
+// 获取 userInfoStore 中的 isLogin 和 showLogin
+const userInfo = userInfoStore();
+const { isLogin, showLogin } = storeToRefs(userInfo);
 
 const articleData = articleStore();
 const { filterContent, articleLists } = articleData;
@@ -46,6 +51,11 @@ const breakpoints = ref({
 
 // 选择文章并获取评论
 function selectArticle(item) {
+  if (!isLogin.value) {
+    showLogin.value = true; // 弹出登录框
+    return;
+  }
+
   if (selectedArticle.value === item) {
     selectedArticle.value = null;
   } else {
@@ -138,7 +148,12 @@ onMounted(async () => {
         <UserList v-else />
       </div>
     </transition>
-    <ArticleInner v-if="selectedArticle" :article="selectedArticle" :article_inner="true" :close="closeArticleInner" />
+    <ArticleInner
+      v-if="selectedArticle"
+      :article="selectedArticle"
+      :article_inner="true"
+      :close="closeArticleInner"
+    />
   </div>
 </template>
 
