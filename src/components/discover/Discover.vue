@@ -1,45 +1,53 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
-import { articleStore } from '../../store/article'; // 文章 Store
-import { commentInfoStore } from '../../store/comment'; // 评论 Store
-import { searchStore } from '../../store/search'; // 搜索 Store
+import { articleStore } from '../../store/article';
+import { commentInfoStore } from '../../store/comment';
+import { searchStore } from '../../store/search';
 import { LazyImg, Waterfall } from 'vue-waterfall-plugin-next';
 import 'vue-waterfall-plugin-next/dist/style.css';
 import ArticleInner from '../subArticle/article_inner.vue';
 import Like_button from '../subArticle/like_button.vue';
 import { storeToRefs } from 'pinia';
 import UserList from './UserList.vue';
-import { titleStore } from '../../store/title'; // 引入 titleStore
-import { userInfoStore } from '../../store/user'; // 引入 userInfoStore
+import { titleStore } from '../../store/title';
+import { userInfoStore } from '../../store/user';
+import { useRoute } from 'vue-router';
 
-// 获取 userInfoStore 中的 isLogin 和 showLogin
+// 获取当前路由
+const route = useRoute();
+
+// 获取用户信息
 const userInfo = userInfoStore();
 const { isLogin, showLogin } = storeToRefs(userInfo);
 
+// 获取文章数据
 const articleData = articleStore();
 const { filterContent, articleLists } = articleData;
+
+// 获取评论数据
 const commentStore = commentInfoStore();
 const { getCommentCount, getComments } = commentStore;
 
+// 获取搜索数据
 const searchData = searchStore();
 const { isSearch, searchArticle } = storeToRefs(searchData);
 
 const selectedArticle = ref(null);
 const imageLoaded = ref({});
 
-// 监听图片加载状态
+// 处理图片加载
 function handleImageLoad(articleId) {
   imageLoaded.value[articleId] = true;
 }
 
-// 使用 titleStore
+// 使用标题数据
 const titleData = titleStore();
 const { titleList, fetchAllTitles } = storeToRefs(titleData);
 const { fetchAllTitles: fetchTitles } = titleData;
 
-// 定义新的标题列表（搜索时）
+// 搜索时使用的标题列表
 const newTitleList = ref([
-  { title: '文章', value: 'Articles', isActive: false },
+  { title: '文章', value: 'Articles', isActive: true },
   { title: '用户', value: 'Users', isActive: false }
 ]);
 
@@ -49,10 +57,10 @@ const breakpoints = ref({
   500: { rowPerView: 2 }
 });
 
-// 选择文章并获取评论
+// 文章选择处理
 function selectArticle(item) {
   if (!isLogin.value) {
-    showLogin.value = true; // 弹出登录框
+    showLogin.value = true;
     return;
   }
 
@@ -70,41 +78,71 @@ function closeArticleInner() {
   selectedArticle.value = null;
 }
 
-// 设置激活的分类
+// 设置激活的标题
 const setActive = (item, value) => {
+  // 根据搜索状态确定行为
   if (isSearch.value) {
     searchArticle.value = value === 'Articles';
   } else {
     filterContent(value);
   }
 
+  // 更新激活状态
   const listToUpdate = isSearch.value ? newTitleList.value : titleList.value;
   listToUpdate.forEach(title => {
     title.isActive = title.title === item.title;
   });
 };
 
-// 监听 isSearch 变化，切换搜索模式时默认激活 "文章"
+// 监听搜索状态变化
 watch(isSearch, (newValue) => {
   if (newValue) {
+    // 进入搜索模式，激活"文章"标签
+    const articlesItem = newTitleList.value.find(item => item.value === 'Articles');
+    if (articlesItem) {
+      setActive(articlesItem, articlesItem.value);
+    }
+  } else {
+    // 退出搜索模式，激活默认标签
+    const defaultTitle = titleList.value.find(item => item.value === 'Romance');
+    if (defaultTitle) {
+      setActive(defaultTitle, defaultTitle.value);
+    }
+  }
+});
+
+// 监听路由变化
+watch(() => route.path, (newPath) => {
+  if (newPath === '/Discover' && !isSearch.value) {
+    // 当路由为Discover且不是搜索状态，强制加载默认内容
+    const defaultTitle = titleList.value.find(item => item.value === 'Romance');
+    if (defaultTitle) {
+      setActive(defaultTitle, defaultTitle.value);
+    }
+  }
+});
+
+// 页面加载
+onMounted(async () => {
+  await fetchTitles(); // 获取所有标题
+  
+  // 根据搜索状态设置默认激活标签
+  if (!isSearch.value) {
+    const defaultTitle = titleList.value.find(item => item.value === 'Romance');
+    if (defaultTitle) {
+      setActive(defaultTitle, defaultTitle.value);
+    }
+  } else {
     const articlesItem = newTitleList.value.find(item => item.value === 'Articles');
     if (articlesItem) {
       setActive(articlesItem, articlesItem.value);
     }
   }
 });
-
-// 页面加载时，获取标题，并默认激活 "言情" 分类
-onMounted(async () => {
-  await fetchTitles(); // 获取所有分类
-  const defaultTitle = titleList.value.find(item => item.value === 'Romance');
-  if (defaultTitle) {
-    setActive(defaultTitle, defaultTitle.value);
-  }
-});
 </script>
 
 <template>
+  <!-- 保持原有模板不变 -->
   <div class="Discover-wrapper">
     <div class="title">
       <!-- 根据 isSearch 切换 titleList 或 newTitleList -->
@@ -179,6 +217,7 @@ onMounted(async () => {
   flex-wrap: wrap;
   justify-content: space-evenly;
 }
+
 
 .title {
   display: inline-flex;

@@ -1,27 +1,36 @@
 <script setup>
 import { ref } from 'vue';
-import { searchStore } from '../../store/search'; // 假设 store 路径为 ../stores/searchStore
+import { searchStore } from '../../store/search';
 import { storeToRefs } from 'pinia';
 
 // 使用 searchStore
 const useSearchStore = searchStore();
-const { searchArticleByTitleOrContent, searchUserByUsername } = useSearchStore;
-let { isSearch } = storeToRefs(useSearchStore);
+const { searchArticleByTitleOrContent, searchUserByUsername, resetSearch } = useSearchStore;
+const { isSearch, searchArticle } = storeToRefs(useSearchStore);
 const searchKeyword = ref(''); // 用于存储输入框中的内容
 
 // 点击搜索按钮或按下回车时触发搜索
 function handleSearch() {
   if (searchKeyword.value.trim() !== '') {
     isSearch.value = true; // 设置 isSearch 为 true
-    searchArticleByTitleOrContent(searchKeyword.value); // 调用搜索文章函数
+    searchArticle.value = true; // 默认显示文章搜索结果
+    
+    // 同时搜索文章和用户
+    searchArticleByTitleOrContent(searchKeyword.value);
     searchUserByUsername(searchKeyword.value);
   }
+}
+
+// 清除搜索
+function clearSearch() {
+  searchKeyword.value = '';
+  resetSearch();
 }
 
 // 监听回车键
 function onEnterPress(event) {
   if (event.key === 'Enter') {
-    handleSearch(); // 调用搜索
+    handleSearch();
   }
 }
 </script>
@@ -31,31 +40,21 @@ function onEnterPress(event) {
     <div class="search-box">
       <span class="brand-name">集知书店</span>
       <span class="input-wrapper">
-        <input type="text" class="input-box" placeholder="Search..." v-model="searchKeyword" @keyup.enter="onEnterPress">
+        <input 
+          type="text" 
+          class="input-box" 
+          placeholder="Search..." 
+          v-model="searchKeyword" 
+          @keyup.enter="onEnterPress"
+        >
         <div class="search-icon" @click="handleSearch">
           <img class="search-img" src="../../assets/img/search.png" alt="">
         </div>
+        <!-- 添加清除按钮 -->
+        <div v-if="searchKeyword" class="clear-icon" @click="clearSearch">
+          ×
+        </div>
       </span>
-      
-      <!-- 以下是关于创作中心和业务合作的注释代码，保留不变 -->
-      <!-- <span class="work-together"> 
-        <span class="creation" style="margin-right:20px"> 创作中心 </span> 
-        <div class="drop-down"> 
-          <div class="creation-inner">创作服务</div> 
-          <div class="creation-inner">直播管理</div> 
-          <div class="creation-inner">电脑直播助手</div> 
-        </div> 
-        <div class="useless"></div> 
-        <span class="together">业务合作</span> 
-        <div class="useless2"></div> 
-        <div class="drop-down2"> 
-          <div class="creation-inner">推广号</div> 
-          <div class="creation-inner">推广合作</div> 
-          <div class="creation-inner">蒲公英</div> 
-          <div class="creation-inner">商家入驻</div> 
-          <div class="creation-inner">MCN入驻</div> 
-        </div> 
-      </span> -->
     </div>
   </div>
 </template>
@@ -69,7 +68,6 @@ function onEnterPress(event) {
   align-items: center;
   position: relative;
   width: 100%;
-  /* 保持搜索框在中间 */
 }
 
 .brand-name {
@@ -78,15 +76,13 @@ function onEnterPress(event) {
   font-weight: bold;
   color: #ff2e4d;
   margin-right: 20px;
-  /* 使品牌名称和搜索框之间的间距可调 */
-  margin-left: 47px; /* 这里可以随意调整间距 */
+  margin-left: 47px;
 }
 
 .input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
-  /* 确保搜索框始终在居中 */
   margin-left: auto;
   margin-right: auto;
 }
@@ -108,6 +104,25 @@ function onEnterPress(event) {
   right: 10px;
   transform: translateY(-50%);
   cursor: pointer;
+}
+
+.clear-icon {
+  position: absolute;
+  top: 50%;
+  right: 40px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 18px;
+  color: #888;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-icon:hover {
+  color: #ff2e4d;
 }
 
 .search-img {

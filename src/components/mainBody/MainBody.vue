@@ -8,9 +8,8 @@
 
     <div class="mainBody-wrapper">
       <div class="navigate">
-        <!-- 新增的商场入口 -->
-        
-        <RouterLink to="/Discover" active-class="active" class="my-txt" @click="setIsSearchFalse">
+        <!-- 广场入口 - 修改点击处理方法 -->
+        <RouterLink to="/Discover" active-class="active" class="my-txt" @click="resetSearchAndNavigate">
           <span class="txt-inner">
             <img class="icon" src="@/assets/img/House.png" alt=""> 广场
           </span>
@@ -20,17 +19,19 @@
             <img class="icon" src="@/assets/img/wallet.png" alt=""> 商场
           </span>
         </RouterLink>
-        <RouterLink to="/Cart" active-class="active" class="my-txt" @click="setIsSearchFalse">
+        
+        <!-- 仅在登录状态下显示的按钮 -->
+        <RouterLink v-if="isLogin" to="/Cart" active-class="active" class="my-txt" @click="setIsSearchFalse">
           <span class="txt-inner">
             <img class="icon" src="@/assets/img/cart.png" alt=""> 购物车
           </span>
         </RouterLink>
-        <RouterLink to="/Publish" active-class="active" class="my-txt">
+        <RouterLink v-if="isLogin" to="/Publish" active-class="active" class="my-txt">
           <span class="txt-inner">
             <img class="icon" src="@/assets/img/shizikuang.png" alt=""> 发布
           </span>
         </RouterLink>
-        <RouterLink to="/Notify/becomment" active-class="active" class="my-txt">
+        <RouterLink v-if="isLogin" to="/Notify/becomment" active-class="active" class="my-txt">
           <span class="txt-inner">
             <img class="icon" src="@/assets/img/ringlingsheng.png" alt=""> 通知
           </span>
@@ -50,7 +51,7 @@
           <img class="more_pic" src="@/assets/img/more_.png" alt="">
           更多
         </div>
-        <div class="drop-down2" v-show="showDrop" :style="{ top: `${dropDownPosition.top}px`, left: `${dropDownPosition.left}px` }" @click.stop>
+        <div class="drop-down2" v-show="showDrop && isLogin" :style="{ top: `${dropDownPosition.top}px`, left: `${dropDownPosition.left}px` }" @click.stop>
           <p class="more-inner">关于作者</p>
           <p class="more-inner">隐私、协议</p>
           <p class="more-inner" @click="logout">退出登录</p>
@@ -78,7 +79,8 @@ const { filterContent } = useArticleStore;
 const userStore = userInfoStore();
 const { isLogin, userThing, showLogin } = storeToRefs(userStore);
 const search = searchStore();
-const { isSearch } = storeToRefs(search);  
+const { isSearch } = storeToRefs(search);
+const { resetSearch } = search;  // 获取重置方法
 
 const router = useRouter();
 const route = useRoute();
@@ -113,14 +115,22 @@ const updateShowLogin = (value) => {
   showLogin.value = value; 
 }
 
+// 只设置搜索状态为false，不处理内容过滤
 const setIsSearchFalse = () => {
   isSearch.value = false;
-  filterContent("Dressing")
+}
+
+// 新增：重置搜索状态，并加载默认内容
+const resetSearchAndNavigate = () => {
+  // 重置搜索数据
+  resetSearch();
+  // 默认加载Romance类别（或您想要的其他默认类别）
+  filterContent("Romance");
 }
 
 watch(isLogin, (newValue) => {
   if (newValue) {
-    router.push('/Me');
+    router.push('/Discover');
   }
 });
 
@@ -143,6 +153,7 @@ onMounted(() => {
   }
 });
 </script>
+
 
 <style scoped>
 .main-content {

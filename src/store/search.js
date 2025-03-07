@@ -1,8 +1,8 @@
 // stores/searchStore.js
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import searchApi from '../api/searchApi'; // 假设 api 路径为 ../api/searchApi
-import { articleStore } from './article'; // 导入 articleStore
+import searchApi from '../api/searchApi';
+import { articleStore } from './article';
 
 export const searchStore = defineStore('search', () => {
   // 获取 articleStore 实例
@@ -26,9 +26,6 @@ export const searchStore = defineStore('search', () => {
       if (res.data.data && res.data.data.length > 0) {
         Object.assign(articleLists, res.data.data);
       }
-      if (isSearch) {
-        isSearch = false;
-      }
     } catch (error) {
       console.error('Error searching articles:', error);
       // 如果发生错误，仍然确保清空 articleLists
@@ -47,9 +44,6 @@ export const searchStore = defineStore('search', () => {
       if (res.data.data && res.data.data.length > 0) {
         Object.assign(userList.value, res.data.data);
       }
-      if (isSearch) {
-        isSearch = false;
-      }
     } catch (error) {
       console.error('Error searching users:', error);
       // 如果发生错误，仍然确保清空 userList
@@ -67,6 +61,14 @@ export const searchStore = defineStore('search', () => {
     return userList.value.find(user => user.username === username) || null;
   }
 
+  // 新增：重置搜索状态和结果
+  function resetSearch() {
+    isSearch.value = false;
+    searchArticle.value = true;
+    articleLists.splice(0, articleLists.length);
+    userList.value.splice(0, userList.value.length);
+  }
+
   return {
     isSearch,
     articleLists, // 共享的 articleLists
@@ -76,5 +78,6 @@ export const searchStore = defineStore('search', () => {
     searchUserByUsername,
     getArticleByTitleOrContent,
     getUserByUsername,
+    resetSearch, // 新增的重置方法
   };
 });
