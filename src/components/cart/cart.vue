@@ -9,86 +9,149 @@
               type="checkbox"
               v-model="selectAll"
               class="checkbox"
-              :disabled="cartItems.length === 0"
+              :disabled="cartLists.length === 0"
             />
             <span>全选</span>
           </div>
-          <button class="delete-btn" @click="removeSelectedItems">删除</button>
+          <button class="delete-btn" @click="removeSelectedItems" :disabled="cartLists.length === 0">删除</button>
         </div>
 
         <!-- 购物车商品列表 -->
         <div class="cart-list" ref="cartList">
-          <Card
-            v-for="(item, index) in cartItems"
-            :key="index"
-            v-model:selected="cartItems[index].selected"
-            :image="item.image"
-            :title="item.title"
-            :author="item.author"
-            :price="item.price"
-            @remove-item="removeItem(index)"
-          />
+          <template v-if="cartLists.length > 0">
+            <Card
+              v-for="(item, index) in cartLists"
+              :key="item.cart_id"
+              v-model:selected="cartLists[index].selected"
+              :image="getImageSrc(item.book.book_img || item.book.book_img_base64)"
+              :title="item.book.book_title"
+              :author="item.book.book_writer"
+              :price="item.book.book_price"
+              @remove-item="removeItem(item.cart_id)"
+            />
+          </template>
+          <template v-else>
+            <div class="empty-cart">
+              <img src="@/assets/img/empty-cart.png" alt="购物车为空" class="empty-cart-image" />
+              <p class="empty-cart-text">购物车空空如也，快去挑选商品吧！</p>
+            </div>
+          </template>
         </div>
 
         <!-- 回顶部按钮 -->
-        <button class="back-to-top" @click="scrollToTop"></button>
+        <button v-if="showBackToTop" class="back-to-top" @click="scrollToTop"></button>
       </div>
 
       <!-- 结算框 -->
       <div class="checkout-box">
         <p>合计: ￥{{ totalPrice }}</p>
         <div class="checkout-items">
-          <div class="item" v-for="(item, index) in visibleItems" :key="index">
-            <img :src="item.image" alt="书籍封面" class="item-image" />
+          <div
+            class="item"
+            v-for="(item, index) in visibleItems"
+            :key="index"
+            @mouseenter="hoverItemIndex = index"
+            @mouseleave="hoverItemIndex = null"
+          >
+            <div class="item-image-wrapper">
+              <img
+                :src="getImageSrc(item.book.book_img || item.book.book_img_base64)"
+                alt="书籍封面"
+                class="item-image"
+                :class="{ 'image-hover': hoverItemIndex === index }"
+              />
+              <button
+                v-if="hoverItemIndex === index"
+                class="remove-item-btn"
+                @click="removeFromCheckout(item)"
+              >
+                ×
+              </button>
+            </div>
           </div>
         </div>
         <button v-if="selectedItems.length > 6" @click="toggleShowMore" class="show-more-btn">
           {{ showMore ? "收起" : "展开全部商品" }} <span>{{ showMore ? "▲" : "▼" }}</span>
         </button>
-        <button class="checkout-btn">结算</button>
+        <button class="checkout-btn" :disabled="selectedItems.length === 0">结算</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { storeToRefs } from 'pinia';
 import Card from "./card/card.vue";
-const cartItems = ref([
-  { image: "book1.jpg", title: "书籍 A", author: "作者 A", price: 100, selected: false },
-  { image: "book2.jpg", title: "书籍 B", author: "作者 B", price: 120, selected: false },
-  { image: "book3.jpg", title: "书籍 C", author: "作者 C", price: 80, selected: false },
-  { image: "book4.jpg", title: "书籍 D", author: "作者 D", price: 90, selected: false },
-  { image: "book5.jpg", title: "书籍 E", author: "作者 E", price: 110, selected: false },
-  { image: "book6.jpg", title: "书籍 F", author: "作者 F", price: 130, selected: false },
-  { image: "book7.jpg", title: "书籍 G", author: "作者 G", price: 140, selected: false },
-  { image: "book8.jpg", title: "书籍 H", author: "作者 H", price: 150, selected: false },
-]);
+import { cartStore } from "@/store/cart";
+
+// 使用 storeToRefs 保持响应式
+const store = cartStore();
+const { cartLists } = storeToRefs(store);
+const { fetchCartsByOwnerId, deleteCart, deleteCarts } = store;
+
+// 假设当前用户ID为1，实际应用中可能需要从用户store或其他地方获取
+const currentUserId = 1;
+
+// 处理图片路径，判断是否为base64格式
+const getImageSrc = (image) => {
+  if (!image) {
+    return 'https://via.placeholder.com/50'; // 返回默认图片
+  }
+
+  // 检查是否已经是完整的base64字符串（包含前缀）
+  if (image.startsWith('data:image')) {
+    return image;
+  }
+  
+  // 检查是否是base64编码但没有前缀
+  // 更严格的base64检测正则表达式
+  if (/^[A-Za-z0-9+/=]+$/.test(image) && image.length > 20) {
+    return `data:image/jpeg;base64,${image}`;
+  }
+  
+  // 否则返回原始图片路径
+  return image;
+};
+
+// 初始化时添加selected属性
+onMounted(async () => {
+  await fetchCartsByOwnerId(currentUserId);
+  // 为每个购物车项添加selected属性
+  cartLists.value.forEach(item => {
+    if (item.selected === undefined) {
+      item.selected = false;
+    }
+  });
+});
 
 // 计算选中的商品
-const selectedItems = computed(() => cartItems.value.filter(item => item.selected));
+const selectedItems = computed(() => cartLists.value.filter(item => item.selected));
 
 // 计算总价
-const totalPrice = computed(() => selectedItems.value.reduce((sum, item) => sum + item.price, 0));
+const totalPrice = computed(() => selectedItems.value.reduce((sum, item) => sum + item.book.book_price, 0));
 
 // 全选逻辑
 const selectAll = computed({
-  get: () => cartItems.value.length > 0 && cartItems.value.every(item => item.selected),
+  get: () => cartLists.value.length > 0 && cartLists.value.every(item => item.selected),
   set: (value) => {
-    cartItems.value.forEach((item, index) => {
-      cartItems.value[index] = { ...item, selected: value };
+    cartLists.value.forEach(item => {
+      item.selected = value;
     });
   },
 });
 
 // 删除单个商品
-const removeItem = (index) => {
-  cartItems.value.splice(index, 1);
+const removeItem = (cartId) => {
+  deleteCart(currentUserId, cartId);
 };
 
 // 删除选中的商品
 const removeSelectedItems = () => {
-  cartItems.value = cartItems.value.filter(item => !item.selected);
+  const selectedCartIds = selectedItems.value.map(item => item.cart_id);
+  if (selectedCartIds.length > 0) {
+    deleteCarts(currentUserId, selectedCartIds);
+  }
 };
 
 // 展开/收起逻辑
@@ -103,10 +166,29 @@ const toggleShowMore = () => {
 
 // 回到顶部逻辑
 const cartList = ref(null);
+const showBackToTop = ref(false); // 控制回顶部按钮的显示
+
 const scrollToTop = () => {
   if (cartList.value) {
     cartList.value.scrollTo({ top: 0, behavior: "smooth" });
   }
+};
+
+// 监听滚动事件，判断是否需要显示回顶部按钮
+onMounted(() => {
+  if (cartList.value) {
+    cartList.value.addEventListener('scroll', () => {
+      showBackToTop.value = cartList.value.scrollTop > 100; // 当滚动超过100px时显示按钮
+    });
+  }
+});
+
+// 鼠标悬停的索引
+const hoverItemIndex = ref(null);
+
+// 从结算框中移除商品
+const removeFromCheckout = (item) => {
+  item.selected = false; // 取消选中状态
 };
 </script>
 
@@ -120,13 +202,14 @@ const scrollToTop = () => {
 
 .cart-content {
   display: flex;
-  gap: 20px;
+  gap: 30px; /* 增加间距 */
 }
 
 .cart-left {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 30px;
+  width: auto; /* 去掉固定宽度，自动适应内容 */
 }
 
 .cart-header {
@@ -159,6 +242,11 @@ const scrollToTop = () => {
   font-size: 14px;
 }
 
+.delete-btn:disabled {
+  color: #ccc; /* 按钮颜色暗淡 */
+  cursor: not-allowed;
+}
+
 .cart-list {
   display: flex;
   flex-direction: column;
@@ -177,6 +265,7 @@ const scrollToTop = () => {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   text-align: center;
+  margin-left: 30px; /* 增加左边距，让结算框更远离商品列表 */
 }
 
 .checkout-box p {
@@ -195,6 +284,12 @@ const scrollToTop = () => {
   font-size: 18px;
   font-weight: bold;
   width: 100%;
+  margin-top: 15px;
+}
+
+.checkout-btn:disabled {
+  background: #ccc; /* 按钮颜色暗淡 */
+  cursor: not-allowed;
 }
 
 .checkout-items {
@@ -202,19 +297,50 @@ const scrollToTop = () => {
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   justify-content: center;
+  margin-bottom: 10px;
 }
 
 .item {
   width: 100%;
   display: flex;
   justify-content: center;
+  position: relative;
+}
+
+.item-image-wrapper {
+  position: relative;
 }
 
 .item-image {
   width: 50px;
   height: 50px;
   object-fit: cover;
+  border-radius: 4px;
+  transition: opacity 0.3s;
 }
+
+.image-hover {
+  opacity: 0.7; /* 图片阴翳效果 */
+}
+
+.remove-item-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: transparent; /* 背景透明 */
+  color: #999; /* 颜色改为淡灰 */
+  border: none;
+  border-radius: 0; /* 去掉圆角 */
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
 
 .show-more-btn {
   background: none;
@@ -235,9 +361,9 @@ const scrollToTop = () => {
 }
 
 .back-to-top {
-  position: absolute;
-  right: 400px;
-  bottom: 100px;
+  position: fixed;
+  right: 430px;
+  bottom: 90px;
   width: 40px;
   height: 40px;
   background-color: rgba(0, 0, 0, 0.5);
@@ -262,5 +388,26 @@ const scrollToTop = () => {
   border-left: 10px solid transparent;
   border-right: 10px solid transparent;
   border-bottom: 10px solid white;
+}
+
+.empty-cart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 20px;
+  text-align: center;
+}
+
+.empty-cart-image {
+  width: 100px;
+  height: 100px;
+  margin-bottom: 20px;
+}
+
+.empty-cart-text {
+  font-size: 16px;
+  color: #888;
 }
 </style>

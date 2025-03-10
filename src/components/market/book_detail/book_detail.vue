@@ -32,8 +32,9 @@
 
       <!-- 按钮区域 -->
       <div class="button-group">
-        <button class="contact-btn">联系卖家</button>
-        <button class="cart-btn">加入购物车</button>
+        <!-- 绑定 addCart 函数，传入 userThing.id 和 book.book_id 作为参数 -->
+        <button class="contact-btn" @click="addCart(user.userThing.id, book.book_id)">联系卖家</button>
+        <button class="cart-btn" @click="addCart(user.userThing.id, book.book_id)">加入购物车</button>
       </div>
     </div>
 
@@ -41,27 +42,49 @@
     <button class="close-btn" @click="$emit('close')">✖</button>
   </div>
 </template>
-
 <script setup>
 import { ref, onMounted } from "vue";
 import userApi from "../../../api/userApi";
+import { cartStore } from "../../../store/cart";
+import { userInfoStore } from "../../../store/user";  // 保持不变
+import { ElMessage } from "element-plus";
 
+// 接收 book 对象
 const props = defineProps({
-  book: Object, // 接收 book 对象，其中包含 seller_id
+  book: Object,
 });
+console.log(props.book);
 
-const seller = ref(null); // 卖家信息
-const isLoading = ref(true); // 加载状态
-const error = ref(null); // 错误信息
+// 使用 Pinia 的 store
+const user = userInfoStore();  // 修改这里
+const cart = cartStore();
+
+const seller = ref(null);  // 卖家信息
+const isLoading = ref(true);  // 加载状态
+const error = ref(null);  // 错误信息
+
+// 添加到购物车的函数
+const addCart = async (userId, bookId) => {
+  if (!user.isLogin) {
+    ElMessage.warning("请先登录！");
+    return;
+  }
+
+  try {
+    await cart.addCart(userId, bookId);
+    ElMessage.success("已添加到购物车！");
+  } catch (err) {
+    console.error("添加到购物车失败:", err);
+    ElMessage.error("添加到购物车失败！");
+  }
+};
 
 // 根据 seller_id 获取卖家信息
 const fetchSellerInfo = async () => {
   try {
     const response = await userApi.SearchUserById(props.book.seller_id);
-    
-
     if (response.data.code === 1 && response.data.data.length > 0) {
-      seller.value = response.data.data[0]; // 获取第一个用户信息
+      seller.value = response.data.data[0];
     } else {
       throw new Error("未找到卖家信息");
     }
@@ -79,6 +102,7 @@ onMounted(() => {
 });
 </script>
 
+
 <style scoped>
 /* 整体布局 */
 .book-detail {
@@ -93,13 +117,12 @@ onMounted(() => {
   animation: fadeIn 0.3s ease-in-out;
 }
 
-/* 左侧书籍封面 */
 .book-image-container {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%; /* 确保高度充满 */
+  height: 100%;
 }
 
 .book-image {
@@ -110,23 +133,20 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* 中间分割线 */
 .vertical-divider {
   width: 1px;
   background: linear-gradient(to bottom, transparent, #ddd, transparent);
-  height: 100%; /* 确保分割线充满高度 */
+  height: 100%;
 }
 
-/* 右侧商品详情 */
 .book-info {
   flex: 1;
   padding-left: 20px;
   display: flex;
   flex-direction: column;
-  height: 100%; /* 确保高度充满 */
+  height: 100%;
 }
 
-/* 标题、作者、价格 */
 .book-title {
   font-size: 24px;
   font-weight: 700;
@@ -141,16 +161,14 @@ onMounted(() => {
   margin: 4px 0;
 }
 
-/* 商品描述 */
 .book-description {
   font-size: 14px;
   color: #777;
   line-height: 1.6;
   margin: 12px 0;
-  flex-grow: 1; /* 让描述部分占据剩余空间 */
+  flex-grow: 1;
 }
 
-/* 卖家信息 */
 .seller-info {
   display: flex;
   align-items: center;
@@ -178,24 +196,21 @@ onMounted(() => {
   margin-top: 12px;
 }
 
-/* 分割线 */
 .divider {
   width: 100%;
   height: 1px;
   background: linear-gradient(to right, transparent, #ddd, transparent);
-  margin: 16px 0; /* 调整分割线上下间距 */
+  margin: 16px 0;
 }
 
-/* 按钮区域 */
 .button-group {
   display: flex;
   justify-content: center;
   gap: 16px;
   margin-top: 6px;
-  margin-bottom: 20px; /* 确保按钮到下方边缘的距离与上方分割线一致 */
+  margin-bottom: 20px;
 }
 
-/* 按钮样式 */
 .contact-btn,
 .cart-btn {
   width: 140px;
@@ -221,17 +236,6 @@ onMounted(() => {
   color: white;
 }
 
-.contact-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(106, 17, 203, 0.3);
-}
-
-.cart-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 65, 108, 0.3);
-}
-
-/* 关闭按钮 */
 .close-btn {
   position: absolute;
   top: 16px;
@@ -241,14 +245,12 @@ onMounted(() => {
   font-size: 20px;
   cursor: pointer;
   color: #666;
-  transition: color 0.3s ease;
 }
 
 .close-btn:hover {
   color: #333;
 }
 
-/* 动画 */
 @keyframes fadeIn {
   from {
     opacity: 0;

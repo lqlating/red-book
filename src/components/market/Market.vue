@@ -80,6 +80,7 @@ const openBookDetail = (book) => {
     price: book.book_price,
     description: book.book_descripe,
     seller_id: book.book_seller_id,
+    book_id: book.book_id,
   };
 };
 
@@ -131,17 +132,18 @@ const scrollToTop = () => {
 // 绑定和解绑滚动监听
 onMounted(async () => {
   await fetchAllTitles();
-
   // 默认加载第一个分类的书籍
   if (titleList.length > 0) {
     await setActive(titleList[0], titleList[0].value);
   }
-
+  console.log(bookLists.value);
+  
   window.addEventListener("scroll", handleScroll);
 });
 
 onUnmounted(() => {
   window.removeEventListener("scroll", handleScroll);
+
 });
 </script>
 
