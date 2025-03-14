@@ -67,6 +67,30 @@ export const bookStore = defineStore('book', () => {
     }
   }
 
+  // 根据书名精确搜索书籍
+  async function searchBooksByExactTitle(title) {
+    try {
+      const res = await bookApi.getBooksByExactTitle(title);
+      if (res.data.data) {
+        bookLists.value = res.data.data;
+      }
+    } catch (error) {
+      console.error('精确搜索书籍失败:', error);
+    }
+  }
+
+  // 根据书名模糊搜索书籍
+  async function searchBooksByTitleContaining(title) {
+    try {
+      const res = await bookApi.getBooksByTitleContaining(title);
+      if (res.data.data) {
+        bookLists.value = res.data.data;
+      }
+    } catch (error) {
+      console.error('模糊搜索书籍失败:', error);
+    }
+  }
+
   return {
     bookLists,
     fetchBooks,
@@ -75,5 +99,7 @@ export const bookStore = defineStore('book', () => {
     updateBook,
     deleteBook,
     fetchBooksByType,
+    searchBooksByExactTitle,
+    searchBooksByTitleContaining,
   };
 });

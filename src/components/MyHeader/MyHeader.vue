@@ -1,38 +1,76 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { searchStore } from '../../store/search';
 import { storeToRefs } from 'pinia';
+import { useRoute, useRouter } from 'vue-router';
+import bookApi from '../../api/bookApi';
+import searchApi from '../../api/searchApi';
 
 // 使用 searchStore
 const useSearchStore = searchStore();
-const { searchArticleByTitleOrContent, searchUserByUsername, resetSearch } = useSearchStore;
-const { isSearch, searchArticle } = storeToRefs(useSearchStore);
-const searchKeyword = ref(''); // 用于存储输入框中的内容
+const { searchArticleByTitleOrContent, searchUserByUsername, resetSearch, searchBooksByTitle } = useSearchStore;
+const { isSearch, searchArticle, searchKeyword } = storeToRefs(useSearchStore);
+
+// 获取当前路由
+const route = useRoute();
+const router = useRouter();
+
+// 加载状态
+const isLoading = ref(false);
+
+// 监听路由变化
+watch(
+  () => route.path,
+  (newPath, oldPath) => {
+    // 如果路由发生变化，重置搜索状态
+    if (newPath !== oldPath) {
+      clearSearch();
+    }
+  }
+);
 
 // 点击搜索按钮或按下回车时触发搜索
-function handleSearch() {
+const handleSearch = async () => {
   if (searchKeyword.value.trim() !== '') {
-    isSearch.value = true; // 设置 isSearch 为 true
-    searchArticle.value = true; // 默认显示文章搜索结果
+    isSearch.value = true;
+    isLoading.value = true;
     
-    // 同时搜索文章和用户
-    searchArticleByTitleOrContent(searchKeyword.value);
-    searchUserByUsername(searchKeyword.value);
+    try {
+      // 根据当前路由调用不同的搜索函数
+      if (route.path === '/Market') {
+        await searchBooksByTitle(searchKeyword.value);
+      } else if (route.path === '/Discover') {
+        searchArticle.value = true;
+        await searchArticleByTitleOrContent(searchKeyword.value);
+        await searchUserByUsername(searchKeyword.value);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      isLoading.value = false;
+    }
   }
 }
 
 // 清除搜索
-function clearSearch() {
+const clearSearch = () => {
   searchKeyword.value = '';
   resetSearch();
 }
 
 // 监听回车键
-function onEnterPress(event) {
+const onEnterPress = (event) => {
   if (event.key === 'Enter') {
     handleSearch();
   }
 }
+
+// 在挂载时根据路由设置搜索函数
+onMounted(() => {
+  // 初始化时清空搜索状态
+  clearSearch();
+});
+
 </script>
 
 <template>

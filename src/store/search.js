@@ -1,8 +1,8 @@
-// stores/searchStore.js
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import searchApi from '../api/searchApi';
 import { articleStore } from './article';
+import { bookStore } from './books';
 
 export const searchStore = defineStore('search', () => {
   // 获取 articleStore 实例
@@ -11,6 +11,8 @@ export const searchStore = defineStore('search', () => {
   let isSearch = ref(false);
   // 使用 articleStore 中的 articleLists
   let articleLists = articles.articleLists;
+  // 添加搜索关键词
+  const searchKeyword = ref('');
 
   // 用于存储搜索的用户列表
   const userList = ref([]);
@@ -20,6 +22,7 @@ export const searchStore = defineStore('search', () => {
     try {
       // 在搜索前清空 articleLists
       articleLists.splice(0, articleLists.length); // 清空 articleLists
+      searchKeyword.value = keyword; // 更新搜索关键词
 
       const res = await searchApi.searchArticle(keyword);
       // 如果搜索结果不为空，更新 articleLists
@@ -38,6 +41,7 @@ export const searchStore = defineStore('search', () => {
     try {
       // 在搜索前清空 userList
       userList.value.splice(0, userList.value.length); // 清空 userList
+      searchKeyword.value = username; // 更新搜索关键词
 
       const res = await searchApi.searchUserByUsername(username);
       // 如果搜索结果不为空，更新 userList
@@ -61,12 +65,32 @@ export const searchStore = defineStore('search', () => {
     return userList.value.find(user => user.username === username) || null;
   }
 
-  // 新增：重置搜索状态和结果
+  // 重置搜索状态和结果
   function resetSearch() {
     isSearch.value = false;
     searchArticle.value = true;
+    searchKeyword.value = ''; // 清空搜索关键词
     articleLists.splice(0, articleLists.length);
     userList.value.splice(0, userList.value.length);
+  }
+
+  // 根据书名搜索书籍
+  async function searchBooksByTitle(title) {
+    try {
+      searchKeyword.value = title; // 更新搜索关键词
+      const books = bookStore();
+
+      const res = await searchApi.searchBooksByTitle(title);
+      // 如果搜索结果不为空，更新书籍列表
+      if (res.data.data && res.data.data.length > 0) {
+        // 清空现有列表并添加新数据
+        books.bookLists.splice(0, books.bookLists.length);
+        Object.assign(books.bookLists, res.data.data);
+      }
+    } catch (error) {
+      console.error('Error searching books:', error);
+      // 发生错误时不清空列表，保持现有数据
+    }
   }
 
   return {
@@ -74,10 +98,12 @@ export const searchStore = defineStore('search', () => {
     articleLists, // 共享的 articleLists
     userList,
     searchArticle,
+    searchKeyword, // 导出搜索关键词
     searchArticleByTitleOrContent,
     searchUserByUsername,
     getArticleByTitleOrContent,
     getUserByUsername,
-    resetSearch, // 新增的重置方法
+    resetSearch, // 重置方法
+    searchBooksByTitle, // 搜索书籍方法
   };
 });

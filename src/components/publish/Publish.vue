@@ -24,9 +24,26 @@
         <input v-model="form.title" type="text" id="title" placeholder="请输入内容标题" required />
       </div>
 
-      <div class="form-group">
-        <label for="author">{{ isBookPublish ? '书本作者' : '文章作者' }}</label>
-        <input v-model="form.author" type="text" id="author" placeholder="请输入作者名字" required />
+      <div class="form-group" v-if="isBookPublish">
+        <label for="author">书籍作者</label>
+        <input v-model="form.author" type="text" id="author" placeholder="请输入书籍作者" required />
+      </div>
+
+      <!-- 文章分类下拉框移动到书籍图片上方 -->
+      <div class="form-group" v-if="!isBookPublish">
+        <label for="category">文章分类</label>
+        <select v-model="form.category" id="category" required>
+          <option value="" disabled selected>请输入文章分类</option> <!-- 添加默认空选项 -->
+          <option v-for="title in titleList" :key="title.id" :value="title.value">{{ title.title }}</option>
+        </select>
+      </div>
+
+      <div class="form-group" v-if="isBookPublish">
+        <label for="category">书籍分类</label>
+        <select v-model="form.category" id="category" required>
+          <option value="" disabled selected>请输入书籍分类</option> <!-- 添加默认空选项 -->
+          <option v-for="title in titleList" :key="title.id" :value="title.value">{{ title.title }}</option>
+        </select>
       </div>
 
       <div class="form-group" v-if="isBookPublish">
@@ -34,24 +51,25 @@
         <input v-model="form.price" type="number" id="price" placeholder="请输入书本售价" required />
       </div>
 
+      <!-- 书籍封面图片上传 -->
       <div class="form-group">
-        <label for="image">选择图片</label>
-        <div class="image-upload" v-if="!form.imagePreview" @click="triggerFileInput" @dragover.prevent @drop.prevent="handleFileDrop">
-          <input type="file" id="image" @change="handleImageUpload" accept="image/*" required ref="fileInput" />
+        <label for="image">选择书籍封面图片</label>
+        <div class="image-upload" v-if="!form.bookImagePreview" @click="triggerFileInput" @dragover.prevent @drop.prevent="handleFileDrop">
+          <input type="file" id="bookImage" @change="handleImageUpload" accept="image/*" required ref="fileInput" />
           <div class="upload-area">
             <span class="upload-icon">+</span>
             <span class="upload-text">点击或拖拽文件上传</span>
           </div>
         </div>
 
-        <div class="uploaded-image" v-if="form.imagePreview">
-          <img :src="form.imagePreview" alt="Image Preview" class="image-preview" />
+        <div class="uploaded-image" v-if="form.bookImagePreview">
+          <img :src="form.bookImagePreview" alt="Image Preview" class="image-preview" />
           <button class="remove-image" @click="clearImage">×</button>
         </div>
       </div>
 
       <div class="form-group">
-        <label for="content">{{ isBookPublish ? '具体介绍' : '文章内容' }}</label>
+        <label for="content">{{ isBookPublish ? '书籍简介' : '文章内容' }}</label>
         <textarea v-model="form.content" id="content" placeholder="请输入内容" rows="4" required></textarea>
       </div>
 
@@ -65,19 +83,30 @@ import { ref, watch } from 'vue';
 import { userInfoStore } from '../../store/user';
 import { ElMessage } from 'element-plus';
 import articleApi from '../../api/articleApi';
+import bookApi from '../../api/bookApi'; // 添加书籍 API 导入
+import { titleStore } from '../../store/title';
+import { storeToRefs } from 'pinia'; // 添加 storeToRefs 导入
 import gsap from 'gsap'; // 引入 GSAP 库
 
 const userStore = userInfoStore();
+const titleStoreInstance = titleStore(); // 获取 titleStore 实例
+const { titleList } = storeToRefs(titleStoreInstance); // 使用 storeToRefs 确保 titleList 的响应性
 const isBookPublish = ref(false); // 切换发布类型
+
 const form = ref({
   title: '',
-  author: '', // 书籍作者
-  price: '', // 书籍售价
-  image: '',
-  imagePreview: '',
+  author: '',
+  category: '',
+  price: '',
+  bookImage: null,
+  bookImagePreview: '',
   content: '',
 });
 const titleRef = ref(null); // 标题的 DOM 引用
+const fileInput = ref(null); // 添加 fileInput 的引用
+
+// 获取标题列表
+titleStoreInstance.fetchAllTitles();
 
 // 切换发布类型
 const togglePublishType = () => {
@@ -95,14 +124,15 @@ watch(isBookPublish, () => {
   }
 });
 
-// 处理图片上传
+// 处理书籍封面图片上传
 const handleImageUpload = (event) => {
   const file = event.target.files[0];
   if (file) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      form.value.image = e.target.result;
-      form.value.imagePreview = e.target.result;
+      const base64Image = e.target.result.split(',')[1]; // 获取 Base64 编码部分
+      form.value.bookImagePreview = e.target.result;
+      form.value.bookImage = base64Image; // 存储 Base64 图片
     };
     reader.readAsDataURL(file);
   }
@@ -114,8 +144,9 @@ const handleFileDrop = (event) => {
   if (file) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      form.value.image = e.target.result;
-      form.value.imagePreview = e.target.result;
+      const base64Image = e.target.result.split(',')[1]; // 获取 Base64 编码部分
+      form.value.bookImagePreview = e.target.result;
+      form.value.bookImage = base64Image; // 存储 Base64 图片
     };
     reader.readAsDataURL(file);
   }
@@ -123,28 +154,29 @@ const handleFileDrop = (event) => {
 
 // 点击触发文件输入
 const triggerFileInput = () => {
-  fileInput.value.click();
+  fileInput.value.click(); // 使用 fileInput 的引用
 };
 
-// 清除已上传的图片
+// 清除已上传的书籍封面图片
 const clearImage = () => {
-  form.value.image = '';
-  form.value.imagePreview = '';
+  form.value.bookImage = null;
+  form.value.bookImagePreview = '';
 };
 
 // 重置表单
 const resetForm = () => {
   form.value.title = '';
   form.value.author = '';
+  form.value.category = '';
   form.value.price = '';
-  form.value.image = '';
-  form.value.imagePreview = '';
+  form.value.bookImage = null;
+  form.value.bookImagePreview = '';
   form.value.content = '';
 };
 
-// 提交文章或书籍
+// 提交书籍或文章
 const submitContent = async () => {
-  if (!form.value.title || !form.value.image || !form.value.content || (isBookPublish.value && !form.value.price)) {
+  if (!form.value.title || !form.value.content || !form.value.category || !form.value.bookImage) {
     ElMessage({
       message: '请填写所有必填项',
       type: 'warning',
@@ -152,21 +184,40 @@ const submitContent = async () => {
     return;
   }
 
-  const data = {
-    title: form.value.title,
-    author: form.value.author, // 书籍作者
-    price: form.value.price, // 书籍售价
-    img: form.value.image.split(',')[1], // 仅取出base64部分
-    content: form.value.content,
-    authorId: userStore.userThing.id, // 传入用户ID
-  };
+  if (isBookPublish.value && (!form.value.author || !form.value.price)) {
+    ElMessage({
+      message: '请填写所有书籍相关信息',
+      type: 'warning',
+    });
+    return;
+  }
 
+  const formData = new FormData();
   try {
-    let res;
     if (isBookPublish.value) {
-      res = await bookApi.addBook(data); // 发布书籍接口
+      formData.append('book_title', form.value.title);
+      formData.append('book_writer', form.value.author);
+      formData.append('book_type', form.value.category);
+      formData.append('book_price', form.value.price);
+      formData.append('book_descrip', form.value.content); // 修改为 book_descrip
+      formData.append('book_seller_id', userStore.userThing.id);
+      
+      if (form.value.bookImage) {
+        formData.append('book_img_base64', form.value.bookImage); // 将 Base64 图片数据作为字符串发送
+      }
+
+      await bookApi.addBook(formData);
     } else {
-      res = await articleApi.addArticle(data); // 发布文章接口
+      formData.append('title', form.value.title);
+      formData.append('txtType', form.value.category);
+      formData.append('content', form.value.content);
+      formData.append('authorId', userStore.userThing.id);
+
+      if (form.value.bookImage) {
+        formData.append('img', form.value.bookImage); // 将 Base64 图片数据作为字符串发送
+      }
+
+      await articleApi.addArticle(formData);
     }
 
     ElMessage({
@@ -176,6 +227,7 @@ const submitContent = async () => {
 
     resetForm();
   } catch (error) {
+    console.error('发布失败:', error);
     ElMessage({
       message: '发布失败，请重试',
       type: 'error',
@@ -184,10 +236,10 @@ const submitContent = async () => {
 };
 </script>
 
+
 <style scoped>
 .toggle-btn-wrapper {
   margin-left: 435px;
-
   margin-bottom: 10px; /* 缩小顶部距离 */
 }
 
@@ -293,27 +345,26 @@ input[type="file"] {
   position: absolute;
   top: 5px;
   right: 5px;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
   border: none;
-  border-radius: 50%;
-  color: #ff2e4d;
-  font-size: 16px; /* 调整字体大小 */
-  cursor: pointer;
   padding: 4px;
+  border-radius: 50%;
+  cursor: pointer;
 }
 
 .publish-button {
-  padding: 8px;
   background-color: #ff2e4d;
   color: white;
+  padding: 8px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 14px;
-  margin-top: 15px; /* 上边距 */
+  font-size: 16px;
+  margin-top: 10px;
 }
 
 .publish-button:hover {
-  background-color: #e62e4d;
+  background-color: #e41d3e;
 }
 </style>

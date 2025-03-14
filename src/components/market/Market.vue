@@ -1,7 +1,7 @@
 <template>
   <div class="market-wrapper">
     <!-- 导航栏 -->
-    <div class="title">
+    <div class="title" :class="{ 'invisible': isSearch }">
       <span
         v-for="item in titleList"
         :key="item.title"
@@ -62,11 +62,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, watch } from "vue";
 import { storeToRefs } from "pinia";
 import BookDetail from "./book_detail/book_detail.vue";
 import { titleStore } from "../../store/title";
 import { bookStore } from "../../store/books";
+import { searchStore } from "../../store/search";
 
 // 选中的书籍
 const selectedBook = ref(null);
@@ -98,6 +99,10 @@ const bookData = bookStore();
 const { fetchBooksByType } = bookData;
 const { bookLists } = storeToRefs(bookData);
 
+// 使用 searchStore
+const searchStoreData = searchStore();
+const { isSearch, searchKeyword } = storeToRefs(searchStoreData);
+
 // 加载状态
 const isLoading = ref(false);
 
@@ -111,7 +116,7 @@ const setActive = async (item, value) => {
   // 显示加载指示器
   isLoading.value = true;
 
-  // 根据分类的 value 重新获取书籍数据
+  // 获取书籍数据
   await fetchBooksByType(value);
 
   // 隐藏加载指示器
@@ -143,7 +148,17 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener("scroll", handleScroll);
+});
 
+// 监听搜索状态变化
+watch(isSearch, async (newValue) => {
+  if (!newValue) {
+    // 退出搜索模式，激活默认标签
+    const defaultTitle = titleList.value.find(item => item.value === '小说');
+    if (defaultTitle) {
+      setActive(defaultTitle, defaultTitle.value);
+    }
+  }
 });
 </script>
 
@@ -157,6 +172,13 @@ onUnmounted(() => {
   display: inline-flex;
   justify-content: space-between;
   margin-bottom: 20px;
+  transition: opacity 0.3s ease; /* 添加过渡效果 */
+}
+
+/* 添加不可见状态的样式 */
+.invisible {
+  opacity: 0;
+  pointer-events: none; /* 防止点击不可见的导航栏 */
 }
 
 .title-inner {

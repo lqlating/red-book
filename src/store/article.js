@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
 import { reactive } from 'vue';
 import articleApi from '../api/articleApi';
-
 export const articleStore = defineStore('article', () => {
   // Reactive state to hold article lists, like_count map, and star_count map
   const articleLists = reactive([]);

@@ -33,8 +33,18 @@ const bookApi = {
         return axiosInstance.get(`/books/type/${bookType}`);
     },
 
-    // 根据书名搜索书籍
+    // 根据书名搜索书籍（精确匹配）
     getBooksByTitle(title) {
+        return axiosInstance.get(`/books/search`, { params: { title } });
+    },
+
+    // 根据书名搜索书籍（模糊匹配）
+    getBooksByTitleContaining(title) {
+        return axiosInstance.get(`/books/search/title`, { params: { title } });
+    },
+
+    // 根据书名精确搜索书籍
+    getBooksByExactTitle(title) {
         return axiosInstance.get(`/books/search`, { params: { title } });
     }
 };
