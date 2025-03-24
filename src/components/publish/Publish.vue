@@ -1,15 +1,8 @@
 <template>
   <!-- 切换按钮放在框外 -->
   <div class="toggle-btn-wrapper">
-    <el-switch
-      v-model="isBookPublish"
-      :active-text="'发布书籍'"
-      :inactive-text="'发布文章'"
-      active-color="#ff2e4d"
-      inactive-color="#dcdfe6"
-      @change="togglePublishType"
-      class="switch-btn"
-    />
+    <el-switch v-model="isBookPublish" :active-text="'发布书籍'" :inactive-text="'发布文章'" active-color="#ff2e4d"
+      inactive-color="#dcdfe6" @change="togglePublishType" class="switch-btn" />
   </div>
 
   <!-- 表单容器 -->
@@ -54,7 +47,8 @@
       <!-- 书籍封面图片上传 -->
       <div class="form-group">
         <label for="image">选择书籍封面图片</label>
-        <div class="image-upload" v-if="!form.bookImagePreview" @click="triggerFileInput" @dragover.prevent @drop.prevent="handleFileDrop">
+        <div class="image-upload" v-if="!form.bookImagePreview" @click="triggerFileInput" @dragover.prevent
+          @drop.prevent="handleFileDrop">
           <input type="file" id="bookImage" @change="handleImageUpload" accept="image/*" required ref="fileInput" />
           <div class="upload-area">
             <span class="upload-icon">+</span>
@@ -201,7 +195,7 @@ const submitContent = async () => {
       formData.append('book_price', form.value.price);
       formData.append('book_descrip', form.value.content); // 修改为 book_descrip
       formData.append('book_seller_id', userStore.userThing.id);
-      
+
       if (form.value.bookImage) {
         formData.append('book_img_base64', form.value.bookImage); // 将 Base64 图片数据作为字符串发送
       }
@@ -240,7 +234,8 @@ const submitContent = async () => {
 <style scoped>
 .toggle-btn-wrapper {
   margin-left: 435px;
-  margin-bottom: 10px; /* 缩小顶部距离 */
+  margin-bottom: 10px;
+  /* 缩小顶部距离 */
 }
 
 .switch-btn {
@@ -256,19 +251,23 @@ const submitContent = async () => {
 
 .publish-wrapper {
   background-color: white;
-  padding: 10px; /* 减少内边距 */
+  padding: 10px;
+  /* 减少内边距 */
   margin-left: 280px;
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 480px; /* 限制表单最大宽度 */
-  overflow: hidden; /* 防止出现滚动条 */
+  max-width: 480px;
+  /* 限制表单最大宽度 */
+  overflow: hidden;
+  /* 防止出现滚动条 */
 }
 
 .publish-title {
   color: #ff2e4d;
   text-align: center;
-  margin-bottom: 10px; /* 缩小标题底部距离 */
+  margin-bottom: 10px;
+  /* 缩小标题底部距离 */
   font-size: 20px;
 }
 
@@ -278,7 +277,8 @@ const submitContent = async () => {
 }
 
 .form-group {
-  margin-bottom: 8px; /* 缩小表单项之间的间距 */
+  margin-bottom: 8px;
+  /* 缩小表单项之间的间距 */
 }
 
 label {
@@ -293,7 +293,8 @@ input[type="number"],
 select,
 textarea {
   width: 100%;
-  padding: 6px; /* 减小输入框的内边距 */
+  padding: 6px;
+  /* 减小输入框的内边距 */
   border: 1px solid #ddd;
   border-radius: 5px;
   font-size: 14px;
@@ -311,7 +312,8 @@ input[type="file"] {
 .upload-area {
   border: 2px dashed #ff2e4d;
   border-radius: 5px;
-  height: 100px; /* 缩小图片上传区域高度 */
+  height: 100px;
+  /* 缩小图片上传区域高度 */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -321,7 +323,8 @@ input[type="file"] {
 }
 
 .upload-icon {
-  font-size: 22px; /* 缩小图标大小 */
+  font-size: 22px;
+  /* 缩小图标大小 */
   color: #ff2e4d;
 }
 
@@ -337,7 +340,8 @@ input[type="file"] {
 .image-preview {
   border-radius: 5px;
   width: 100%;
-  height: 100px; /* 缩小图片预览大小 */
+  height: 100px;
+  /* 缩小图片预览大小 */
   object-fit: cover;
 }
 

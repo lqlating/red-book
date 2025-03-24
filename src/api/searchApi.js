@@ -14,7 +14,7 @@ const searchApi = {
 
     // 修改搜索书籍的方法
     searchBooksByTitle(title) {
-        return axiosInstance.get(`/books/search/title`, { params: { title } });
+        return axiosInstance.get(`/search/title`, { params: { title } });
     }
 }
 

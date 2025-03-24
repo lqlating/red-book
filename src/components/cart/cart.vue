@@ -5,12 +5,7 @@
         <!-- 头部，全选 + 删除 -->
         <div class="cart-header">
           <div class="header-left">
-            <input
-              type="checkbox"
-              v-model="selectAll"
-              class="checkbox"
-              :disabled="cartLists.length === 0"
-            />
+            <input type="checkbox" v-model="selectAll" class="checkbox" :disabled="cartLists.length === 0" />
             <span>全选</span>
           </div>
           <button class="delete-btn" @click="removeSelectedItems" :disabled="cartLists.length === 0">删除</button>
@@ -19,16 +14,9 @@
         <!-- 购物车商品列表 -->
         <div class="cart-list" ref="cartList">
           <template v-if="cartLists.length > 0">
-            <Card
-              v-for="(item, index) in cartLists"
-              :key="item.cart_id"
-              v-model:selected="cartLists[index].selected"
-              :image="getImageSrc(item.book.book_img || item.book.book_img_base64)"
-              :title="item.book.book_title"
-              :author="item.book.book_writer"
-              :price="item.book.book_price"
-              @remove-item="removeItem(item.cart_id)"
-            />
+            <Card v-for="(item, index) in cartLists" :key="item.cart_id" v-model:selected="cartLists[index].selected"
+              :image="getImageSrc(item.book.book_img || item.book.book_img_base64)" :title="item.book.book_title"
+              :author="item.book.book_writer" :price="item.book.book_price" @remove-item="removeItem(item.cart_id)" />
           </template>
           <template v-else>
             <div class="empty-cart">
@@ -46,25 +34,12 @@
       <div class="checkout-box">
         <p>合计: ￥{{ totalPrice }}</p>
         <div class="checkout-items">
-          <div
-            class="item"
-            v-for="(item, index) in visibleItems"
-            :key="index"
-            @mouseenter="hoverItemIndex = index"
-            @mouseleave="hoverItemIndex = null"
-          >
+          <div class="item" v-for="(item, index) in visibleItems" :key="index" @mouseenter="hoverItemIndex = index"
+            @mouseleave="hoverItemIndex = null">
             <div class="item-image-wrapper">
-              <img
-                :src="getImageSrc(item.book.book_img || item.book.book_img_base64)"
-                alt="书籍封面"
-                class="item-image"
-                :class="{ 'image-hover': hoverItemIndex === index }"
-              />
-              <button
-                v-if="hoverItemIndex === index"
-                class="remove-item-btn"
-                @click="removeFromCheckout(item)"
-              >
+              <img :src="getImageSrc(item.book.book_img || item.book.book_img_base64)" alt="书籍封面" class="item-image"
+                :class="{ 'image-hover': hoverItemIndex === index }" />
+              <button v-if="hoverItemIndex === index" class="remove-item-btn" @click="removeFromCheckout(item)">
                 ×
               </button>
             </div>
@@ -84,14 +59,16 @@ import { ref, computed, onMounted } from "vue";
 import { storeToRefs } from 'pinia';
 import Card from "./card/card.vue";
 import { cartStore } from "@/store/cart";
+import { userInfoStore } from "@/store/user";
 
 // 使用 storeToRefs 保持响应式
 const store = cartStore();
+const userStore = userInfoStore();
 const { cartLists } = storeToRefs(store);
 const { fetchCartsByOwnerId, deleteCart, deleteCarts } = store;
 
-// 假设当前用户ID为1，实际应用中可能需要从用户store或其他地方获取
-const currentUserId = 1;
+// 从 userStore 中获取用户 ID
+const currentUserId = userStore.userThing.id;
 
 // 处理图片路径，判断是否为base64格式
 const getImageSrc = (image) => {
@@ -103,13 +80,13 @@ const getImageSrc = (image) => {
   if (image.startsWith('data:image')) {
     return image;
   }
-  
+
   // 检查是否是base64编码但没有前缀
   // 更严格的base64检测正则表达式
   if (/^[A-Za-z0-9+/=]+$/.test(image) && image.length > 20) {
     return `data:image/jpeg;base64,${image}`;
   }
-  
+
   // 否则返回原始图片路径
   return image;
 };
@@ -202,14 +179,16 @@ const removeFromCheckout = (item) => {
 
 .cart-content {
   display: flex;
-  gap: 30px; /* 增加间距 */
+  gap: 30px;
+  /* 增加间距 */
 }
 
 .cart-left {
   display: flex;
   flex-direction: column;
   gap: 30px;
-  width: auto; /* 去掉固定宽度，自动适应内容 */
+  width: auto;
+  /* 去掉固定宽度，自动适应内容 */
 }
 
 .cart-header {
@@ -243,7 +222,8 @@ const removeFromCheckout = (item) => {
 }
 
 .delete-btn:disabled {
-  color: #ccc; /* 按钮颜色暗淡 */
+  color: #ccc;
+  /* 按钮颜色暗淡 */
   cursor: not-allowed;
 }
 
@@ -251,7 +231,7 @@ const removeFromCheckout = (item) => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 600px;
+  max-height: 480px;  /* 减小最大高度 */
   overflow-y: auto;
   scrollbar-width: none;
   border-radius: 8px;
@@ -259,13 +239,14 @@ const removeFromCheckout = (item) => {
 
 .checkout-box {
   width: 250px;
-  height: fit-content;
+  max-height: 400px;  /* 限制结算框的最大高度，与列表保持一致 */
   padding: 20px;
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   text-align: center;
-  margin-left: 30px; /* 增加左边距，让结算框更远离商品列表 */
+  margin-left: 30px;
+  /* 增加左边距，让结算框更远离商品列表 */
 }
 
 .checkout-box p {
@@ -288,7 +269,8 @@ const removeFromCheckout = (item) => {
 }
 
 .checkout-btn:disabled {
-  background: #ccc; /* 按钮颜色暗淡 */
+  background: #ccc;
+  /* 按钮颜色暗淡 */
   cursor: not-allowed;
 }
 
@@ -298,6 +280,13 @@ const removeFromCheckout = (item) => {
   gap: 10px;
   justify-content: center;
   margin-bottom: 10px;
+  max-height: 250px;  /* 给结算框中的商品列表一个最大高度 */
+  overflow-y: auto;
+  scrollbar-width: none;  /* 隐藏滚动条 */
+}
+
+.checkout-items::-webkit-scrollbar {
+  display: none;
 }
 
 .item {
@@ -320,17 +309,21 @@ const removeFromCheckout = (item) => {
 }
 
 .image-hover {
-  opacity: 0.7; /* 图片阴翳效果 */
+  opacity: 0.7;
+  /* 图片阴翳效果 */
 }
 
 .remove-item-btn {
   position: absolute;
   top: 0;
   right: 0;
-  background: transparent; /* 背景透明 */
-  color: #999; /* 颜色改为淡灰 */
+  background: transparent;
+  /* 背景透明 */
+  color: #999;
+  /* 颜色改为淡灰 */
   border: none;
-  border-radius: 0; /* 去掉圆角 */
+  border-radius: 0;
+  /* 去掉圆角 */
   width: 20px;
   height: 20px;
   display: flex;

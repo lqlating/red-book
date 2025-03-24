@@ -9,6 +9,7 @@ export const cartStore = defineStore('cart', () => {
   // 根据用户 ID 获取购物车列表
   async function fetchCartsByOwnerId(ownerId) {
     try {
+      console.log("fetchCartsByOwnerId", ownerId);
       const res = await cartApi.getCartsByOwnerId(ownerId);
       cartLists.value = res.data.data;
     } catch (error) {

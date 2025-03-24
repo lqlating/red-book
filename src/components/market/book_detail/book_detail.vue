@@ -22,7 +22,8 @@
       <!-- 卖家信息 -->
       <div v-if="isLoading" class="seller-loading">加载卖家信息中...</div>
       <div v-else-if="seller" class="seller-info">
-        <img :src="seller.avatar" alt="卖家头像" class="seller-avatar" />
+        <div v-if="!seller.avatar_base64" class="avatar-skeleton"></div>
+        <img v-else :src="`data:image/png;base64,${seller.avatar_base64}`" alt="卖家头像" class="seller-avatar" />
         <p class="seller-name">{{ seller.username }}</p>
       </div>
       <div v-else class="seller-error">获取卖家信息失败</div>
@@ -175,6 +176,14 @@ onMounted(() => {
   margin-top: 12px;
 }
 
+.avatar-skeleton {
+  width: 40px;
+  height: 40px;
+  background-color: #e0e0e0;
+  border-radius: 50%;
+  margin-right: 12px;
+}
+
 .seller-avatar {
   width: 40px;
   height: 40px;
@@ -256,6 +265,7 @@ onMounted(() => {
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
