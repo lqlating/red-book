@@ -17,8 +17,8 @@ import { useRoute } from 'vue-router';
 const route = useRoute();
 
 // 获取用户信息
-const userInfo = userInfoStore();
-const { isLogin, showLogin } = storeToRefs(userInfo);
+const userStore = userInfoStore();
+const { isLogin, showLogin, userThing } = storeToRefs(userStore);
 
 // 获取文章数据
 const articleData = articleStore();
@@ -125,7 +125,7 @@ watch(() => route.path, (newPath) => {
 // 页面加载
 onMounted(async () => {
   await fetchTitles(); // 获取所有标题
-  
+
   // 根据搜索状态设置默认激活标签
   if (!isSearch.value) {
     const defaultTitle = titleList.value.find(item => item.value === 'Romance');
@@ -146,12 +146,8 @@ onMounted(async () => {
   <div class="Discover-wrapper">
     <div class="title">
       <!-- 根据 isSearch 切换 titleList 或 newTitleList -->
-      <span
-        v-for="item in (isSearch ? newTitleList : titleList)"
-        :key="item.title"
-        :class="{ 'title-inner': true, 'active': item.isActive }"
-        @click="setActive(item, item.value)"
-      >
+      <span v-for="item in (isSearch ? newTitleList : titleList)" :key="item.title"
+        :class="{ 'title-inner': true, 'active': item.isActive }" @click="setActive(item, item.value)">
         {{ item.title }}
       </span>
     </div>
@@ -166,14 +162,9 @@ onMounted(async () => {
             <template #item="{ item }">
               <div class="card">
                 <transition name="fade">
-                  <LazyImg
-                    class="lazy"
-                    :url="`data:image/png;base64,${item.img_url}`"
-                    @load="handleImageLoad(item.article_id)"
-                    :key="item.article_id + '-img'"
-                    v-show="imageLoaded[item.article_id]"
-                    @click="selectArticle(item)"
-                  />
+                  <LazyImg class="lazy" :url="`data:image/png;base64,${item.img_url}`"
+                    @load="handleImageLoad(item.article_id)" :key="item.article_id + '-img'"
+                    v-show="imageLoaded[item.article_id]" @click="selectArticle(item)" />
                 </transition>
                 <p class="text" @click="selectArticle(item)">{{ item.title }}</p>
                 <Like_button :item="item" :key="item.article_id + '-like'" :out="true" />
@@ -186,12 +177,8 @@ onMounted(async () => {
         <UserList v-else />
       </div>
     </transition>
-    <ArticleInner
-      v-if="selectedArticle"
-      :article="selectedArticle"
-      :article_inner="true"
-      :close="closeArticleInner"
-    />
+    <ArticleInner v-if="selectedArticle" :article="selectedArticle" :article_inner="true" :close="closeArticleInner"
+      :current-user-id="userThing.id" />
   </div>
 </template>
 

@@ -24,6 +24,18 @@
           <span class="commentCount" v-show="subCommentCount !== 0">{{ subCommentCount }}</span>
           <span class="commentCount" v-show="subCommentCount === 0 || grandparent_id">回复</span>
         </button>
+        <el-dropdown trigger="click" class="report-dropdown" teleported>
+          <button class="report-btn">
+            <el-icon class="more-icon">
+              <MoreFilled />
+            </el-icon>
+          </button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item @click="showReportDialog">举报</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </div>
   </div>
@@ -33,6 +45,9 @@
       :article_id="article_id" :grandparent_id="comment.comment_id" v-bind="$attrs" />
     <button v-if="showMoreButtonText" class="show-more" @click="showMoreReplies">{{ showMoreButtonText }}</button>
   </div>
+
+  <ReportDialog :is-visible="isReportDialogVisible" content-type="comment" :target-id="comment.comment_id"
+    :report-content-id="comment.comment_id" :reporter-id="user_id" @close="closeReportDialog" />
 </template>
 
 <script setup>
@@ -43,10 +58,13 @@ import { commentInfoStore } from '../../store/comment';
 import { useLikeStore } from '../../store/likeStar';
 import axios from 'axios';
 import { editInfoStore } from '../../store/isEdit';
+import ReportDialog from '../report/ReportDialog.vue';
+import { MoreFilled } from '@element-plus/icons-vue';
 
 const editStore = editInfoStore();
 const { isEditing } = storeToRefs(editStore);
 const userStore = userInfoStore();
+const { isLogin, showLogin } = storeToRefs(userStore);
 const commentStore = commentInfoStore();
 const likeStore = useLikeStore();
 
@@ -67,6 +85,8 @@ const visibleSubComments = ref([]);
 const showMoreButtonText = ref('');
 const subCommentUserName = ref('');
 const subCommentCount = computed(() => subComments.value.length);
+
+const isReportDialogVisible = ref(false);
 
 // 获取用户信息
 const searchUserById = async (userId) => {
@@ -163,6 +183,20 @@ onMounted(async () => {
     getuserbyCommentid(comment.parent_id);
   }
 });
+
+const showReportDialog = () => {
+  if (!isLogin.value) {
+    showLogin.value = true;
+    return;
+  }
+  isReportDialogVisible.value = true;
+  console.log('Opening report dialog:', isReportDialogVisible.value);
+};
+
+const closeReportDialog = () => {
+  console.log('Closing report dialog');
+  isReportDialogVisible.value = false;
+};
 </script>
 
 <style scoped>
@@ -210,6 +244,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   margin-top: 10px;
+  justify-content: flex-start;
 }
 
 button {
@@ -287,5 +322,51 @@ button .heart {
   text-align: left;
   display: block;
   margin-top: 10px;
+}
+
+.report-dropdown {
+  margin-left: auto;
+}
+
+.report-btn {
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  height: 24px;
+  width: 24px;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.report-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.more-icon {
+  font-size: 18px;
+  color: #999;
+  transition: all 0.3s;
+}
+
+.report-btn:hover .more-icon {
+  color: #666;
+}
+
+.icons button,
+.icons .report-dropdown {
+  margin-right: 12px;
+}
+
+.icons>*:last-child {
+  margin-right: 0;
+}
+
+:global(.el-popper) {
+  z-index: 10001 !important;
 }
 </style>

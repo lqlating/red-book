@@ -1,15 +1,13 @@
 <template>
   <div class="article-inner" v-if="localArticleInner">
     <span class="article_img_inner" @click="openOverlay">
-      <img 
-        :src="img_url ? `data:image/png;base64,${img_url}` : '/images/default_image.jpg'" 
-        alt="Article Image" 
-        :class="{'fit-height': isTallImage, 'fit-width': !isTallImage}" 
-      />
+      <img :src="img_url ? `data:image/png;base64,${img_url}` : '/images/default_image.jpg'" alt="Article Image"
+        :class="{ 'fit-height': isTallImage, 'fit-width': !isTallImage }" />
     </span>
     <span>
       <div class="user-inner">
-        <img v-if="avatar" :src="avatar" alt="User Avatar" />
+        <img v-if="avatar" :src="avatar ? `data:image/png;base64,${avatar}` : '/images/default_image.jpg'"
+          alt="User Avatar" />
         <span class="username-info" v-if="userName">{{ userName }}</span>
         <span class="subscribe" @click="subscribe()" v-show="!is_subscript">关注</span>
         <span class="no_subscribe" @click="subscribe()" v-show="is_subscript && isLogin">已关注</span>
@@ -18,30 +16,49 @@
         <div class="articleContent">
           <div class="inner-title">{{ articleTitle }}</div>
           <div class="inner-content">{{ content }}</div>
-          <div class="date">{{ publication_time }} {{ address }}</div>
+          <div class="date">
+            {{ publication_time }} {{ address }}
+            <el-dropdown trigger="click" class="report-dropdown" teleported>
+              <button class="report-btn">
+                <el-icon class="more-icon">
+                  <MoreFilled />
+                </el-icon>
+              </button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item @click="showReportDialog">举报</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
           <hr class="article-comment-hr" />
           <div class="comment_count">共 <span>{{ commentCount }}</span> 条评论</div>
-          <Comment class="subcomment" :comment="comment" v-for="comment in comment_content" :key="comment.id" :article_id="article_id"></Comment>
+          <Comment class="subcomment" :comment="comment" v-for="comment in comment_content" :key="comment.id"
+            :article_id="article_id"></Comment>
           <div class="end"> -THE END-</div>
         </div>
       </div>
-      <ReplyPart :commentCount="commentCount" :like_count="like_count" :star_count="star_count" :article_id="article_id" :like="like"></ReplyPart>
+      <ReplyPart :commentCount="commentCount" :like_count="like_count" :star_count="star_count" :article_id="article_id"
+        :like="like"></ReplyPart>
     </span>
 
     <!-- 毛玻璃遮罩层 -->
     <div class="overlay" v-if="isOverlayOpen" @click="closeOverlay">
-      <img 
-        :src="img_url ? `data:image/png;base64,${img_url}` : '/images/default_image.jpg'" 
-        alt="Overlay Image" 
-        class="overlay-image" 
-      />
+      <img :src="img_url ? `data:image/png;base64,${img_url}` : '/images/default_image.jpg'" alt="Overlay Image"
+        class="overlay-image" />
     </div>
   </div>
   <div class="mask" v-if="localArticleInner" @click="closeArticleInner"></div>
+
+  <!-- 添加举报对话框组件 -->
+  <ReportDialog :is-visible="isReportDialogVisible" content-type="article" :target-id="article_id"
+    :report-content-id="article_id" :reporter-id="currentUserId" :extra-data="{ author_id: author_id }"
+    @close="closeReportDialog" />
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from "vue";
+import { ElDropdown, ElDropdownMenu, ElDropdownItem } from 'element-plus';
 import Comment from "../comment/Comment.vue";
 import ReplyPart from "../comment/replyPart.vue";
 import { userInfoStore } from "../../store/user";
@@ -49,8 +66,16 @@ import { storeToRefs } from "pinia";
 import { commentInfoStore } from "../../store/comment";
 import userApi from "../../api/userApi";
 import subscriptApi from "../../api/subscriptApi";
+import ReportDialog from '../report/ReportDialog.vue';
+import reportApi from '../../api/reportApi';
+import { MoreFilled } from '@element-plus/icons-vue';
 
-const props = defineProps(["article", "article_inner", "close"]);
+const props = defineProps({
+  article: Object,
+  article_inner: Boolean,
+  close: Function,
+  currentUserId: [String, Number]
+});
 
 // 从 props 解构数据
 let {
@@ -78,6 +103,7 @@ const userInfo = ref({});
 const userName = ref("");
 const avatar = ref("");
 const isOverlayOpen = ref(false); // 控制遮罩层的状态
+const isReportDialogVisible = ref(false);
 
 // 计算属性
 const commentCount = computed(() => commentCountByArticleId[article_id] || 0);
@@ -104,7 +130,7 @@ async function loadArticleData() {
     const result = await userApi.SearchUserById(author_id);
     userInfo.value = result.data.data[0];
     userName.value = userInfo.value.username;
-    avatar.value = userInfo.value.avatar;
+    avatar.value = userInfo.value.avatar_base64;
 
     await getComments(article_id);
     await getCommentCount(article_id);
@@ -142,6 +168,21 @@ function closeOverlay() {
 function closeArticleInner() {
   props.close();
 }
+
+// 显示举报对话框
+const showReportDialog = () => {
+  if (!isLogin.value) {
+    showLogin.value = true;
+    return;
+  }
+  isReportDialogVisible.value = true;
+};
+
+// 关闭举报对话框
+const closeReportDialog = () => {
+  console.log('Closing dialog');
+  isReportDialogVisible.value = false;
+};
 
 // 生命周期：组件挂载时加载数据
 onMounted(() => {
@@ -189,25 +230,34 @@ watch(
   width: 53%;
   height: 100%;
   border-right: 1px solid #f1eeee;
-  display: flex; /* 使用 Flexbox */
-  justify-content: center; /* 水平居中 */
-  align-items: center; /* 垂直居中 */
-  overflow: hidden; /* 确保裁剪区域不显示溢出部分 */
+  display: flex;
+  /* 使用 Flexbox */
+  justify-content: center;
+  /* 水平居中 */
+  align-items: center;
+  /* 垂直居中 */
+  overflow: hidden;
+  /* 确保裁剪区域不显示溢出部分 */
 }
 
 .article_img_inner img {
   width: 100%;
-  height: auto; /* 高度自适应 */
-  object-fit: cover; /* 使用覆盖模式 */
+  height: auto;
+  /* 高度自适应 */
+  object-fit: cover;
+  /* 使用覆盖模式 */
 }
 
 .fit-height {
-  height: 100%; /* 高度为100% */
+  height: 100%;
+  /* 高度为100% */
 }
 
 .fit-width {
-  height: auto; /* 高度自适应 */
-  max-height: 100%; /* 最大高度为100% */
+  height: auto;
+  /* 高度自适应 */
+  max-height: 100%;
+  /* 最大高度为100% */
 }
 
 .article_img_inner+span {
@@ -317,12 +367,15 @@ watch(
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.7); /* 毛玻璃效果 */
-  backdrop-filter: blur(5px); /* 背景模糊 */
+  background: rgba(255, 255, 255, 0.7);
+  /* 毛玻璃效果 */
+  backdrop-filter: blur(5px);
+  /* 背景模糊 */
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000; /* 确保在最上层 */
+  z-index: 10000;
+  /* 确保在最上层 */
 }
 
 .overlay-image {
@@ -339,8 +392,49 @@ watch(
 }
 
 .date {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 14px;
   color: #33333399;
   font-weight: 520;
+}
+
+.report-dropdown {
+  margin-left: auto;
+}
+
+.report-btn {
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  height: 24px;
+  width: 24px;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.report-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.more-icon {
+  font-size: 18px;
+  color: #999;
+  transition: all 0.3s;
+}
+
+.report-btn:hover .more-icon {
+  color: #666;
+}
+
+/* 使用 :global 来确保样式能够影响到 teleported 的下拉菜单 */
+:global(.el-popper) {
+  z-index: 10001 !important;
 }
 </style>

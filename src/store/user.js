@@ -72,7 +72,6 @@ export const userInfoStore = defineStore('user', () => {
                     account.value = '';
                     password.value = '';
                 } else {
-                    ElMessage.success("登录成功");
                     const userData = {
                         username: data.data.username,
                         email: data.data.email,
@@ -87,7 +86,7 @@ export const userInfoStore = defineStore('user', () => {
                     };
 
                     Object.assign(userThing, userData);
-                    // 存储数据到 sessionStorage，带上时间戳
+                    // 继续使用 sessionStorage
                     sessionStorage.setItem('userInfo', JSON.stringify({
                         data: userData,
                         timestamp: new Date().getTime()
@@ -96,7 +95,12 @@ export const userInfoStore = defineStore('user', () => {
                     account.value = '';
                     password.value = '';
                     isLogin.value = true;
-                    fetchTargetIds(userThing.id);
+                    ElMessage.success("登录成功");
+
+                    // 添加一个短暂的延时，确保数据保存后再刷新页面
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
                 }
             })
             .catch(error => {

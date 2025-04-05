@@ -33,6 +33,7 @@ declare module 'vue' {
     Notify: typeof import('./components/notify/Notify.vue')['default']
     Publish: typeof import('./components/publish/Publish.vue')['default']
     ReplyPart: typeof import('./components/comment/replyPart.vue')['default']
+    ReportDialog: typeof import('./components/report/ReportDialog.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Square: typeof import('./components/square/square.vue')['default']

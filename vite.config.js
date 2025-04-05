@@ -27,7 +27,7 @@ export default defineConfig({
     hmr: {
       overlay: true, // 显示 HMR 错误
     },
-    port: 5173,
+    port: 5174,
     strictPort: true,
     watch: {
       usePolling: true, // 适用于 WSL、Docker 等环境

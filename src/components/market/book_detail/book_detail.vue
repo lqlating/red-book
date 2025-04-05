@@ -1,5 +1,24 @@
 <template>
   <div class="book-detail">
+    <!-- 添加举报按钮 -->
+    <el-dropdown trigger="click" class="report-dropdown" teleported>
+      <button class="report-btn">
+        <el-icon class="more-icon">
+          <MoreFilled />
+        </el-icon>
+      </button>
+      <template #dropdown>
+        <el-dropdown-menu>
+          <el-dropdown-item @click="showReportDialog">举报</el-dropdown-item>
+        </el-dropdown-menu>
+      </template>
+    </el-dropdown>
+
+    <!-- 添加举报对话框 -->
+    <ReportDialog :is-visible="isReportDialogVisible" content-type="book" :target-id="book.book_id"
+      :report-content-id="book.book_id" :reporter-id="user.userThing.id" :extra-data="{ seller_id: book.seller_id }"
+      @close="closeReportDialog" />
+
     <!-- 左侧书籍封面 -->
     <div class="book-image-container">
       <img :src="book.image" alt="书籍封面" class="book-image" />
@@ -10,14 +29,14 @@
 
     <!-- 右侧商品详情 -->
     <div class="book-info">
-      <h2 class="book-title">{{ book.title }}</h2>
-      <p class="book-author">作者: {{ book.author }}</p>
-      <p class="book-price">价格: ¥{{ book.price }}</p>
-
-      <!-- 商品描述 -->
-      <p class="book-description">
-        {{ book.description || "这本书暂无详细介绍。" }}
-      </p>
+      <div class="book-info-block">
+        <h2 class="book-title">{{ book.title }}</h2>
+        <p class="book-author">作者: {{ book.author }}</p>
+        <p class="book-price">价格: ¥{{ book.price }}</p>
+        <p class="book-description">
+          {{ book.description || "这本书暂无详细介绍。" }}
+        </p>
+      </div>
 
       <!-- 卖家信息 -->
       <div v-if="isLoading" class="seller-loading">加载卖家信息中...</div>
@@ -47,8 +66,11 @@
 import { ref, onMounted } from "vue";
 import userApi from "../../../api/userApi";
 import { cartStore } from "../../../store/cart";
-import { userInfoStore } from "../../../store/user";  // 保持不变
+import { userInfoStore } from "../../../store/user";
 import { ElMessage } from "element-plus";
+import { ElDropdown, ElDropdownMenu, ElDropdownItem } from 'element-plus';
+import { MoreFilled } from '@element-plus/icons-vue';
+import ReportDialog from '../../report/ReportDialog.vue';
 
 // 接收 book 对象
 const props = defineProps({
@@ -63,6 +85,7 @@ const cart = cartStore();
 const seller = ref(null);  // 卖家信息
 const isLoading = ref(true);  // 加载状态
 const error = ref(null);  // 错误信息
+const isReportDialogVisible = ref(false);
 
 // 添加到购物车的函数
 const addCart = async (userId, bookId) => {
@@ -101,6 +124,14 @@ const fetchSellerInfo = async () => {
 onMounted(() => {
   fetchSellerInfo();
 });
+
+const showReportDialog = () => {
+  isReportDialogVisible.value = true;
+};
+
+const closeReportDialog = () => {
+  isReportDialogVisible.value = false;
+};
 </script>
 
 
@@ -142,38 +173,48 @@ onMounted(() => {
 
 .book-info {
   flex: 1;
-  padding-left: 20px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
+}
+
+.book-info-block {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  overflow-y: auto;
+  max-height: calc(100% - 280px);
 }
 
 .book-title {
   font-size: 24px;
   font-weight: 700;
   color: #333;
-  margin-bottom: 8px;
+  margin: 0 0 12px 0;
 }
 
 .book-author,
 .book-price {
   font-size: 14px;
   color: #666;
-  margin: 4px 0;
+  margin: 8px 0;
 }
 
 .book-description {
   font-size: 14px;
   color: #777;
   line-height: 1.6;
-  margin: 12px 0;
-  flex-grow: 1;
+  margin: 16px 0 0 0;
+  word-break: break-word;
 }
 
 .seller-info {
   display: flex;
   align-items: center;
-  margin-top: 12px;
+  margin-top: 143px;
 }
 
 .avatar-skeleton {
@@ -257,6 +298,26 @@ onMounted(() => {
 }
 
 .close-btn:hover {
+  color: #333;
+}
+
+.report-dropdown {
+  position: absolute;
+  top: 167px;
+  right: 16px;
+  /* 你可以根据需要调整这个值 */
+  z-index: 1;
+}
+
+.report-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+}
+
+.report-btn:hover {
   color: #333;
 }
 

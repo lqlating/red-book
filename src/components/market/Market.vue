@@ -2,12 +2,8 @@
   <div class="market-wrapper">
     <!-- 导航栏 -->
     <div class="title" :class="{ 'invisible': isSearch }">
-      <span
-        v-for="item in titleList"
-        :key="item.title"
-        :class="{ 'title-inner': true, 'active': item.isActive }"
-        @click="setActive(item, item.value)"
-      >
+      <span v-for="item in titleList" :key="item.title" :class="{ 'title-inner': true, 'active': item.isActive }"
+        @click="setActive(item, item.value)">
         {{ item.title }}
       </span>
     </div>
@@ -22,19 +18,10 @@
 
       <!-- 书籍列表 -->
       <transition-group name="fade-masonry" tag="div" class="book-list-masonry">
-        <div
-          v-for="book in bookLists"
-          :key="book.book_id"
-          class="book-item"
-          @click="openBookDetail(book)"
-        >
+        <div v-for="book in bookLists" :key="book.book_id" class="book-item" @click="openBookDetail(book)">
           <!-- 书籍图片 -->
-          <img
-            v-if="book.book_img"
-            :src="`data:image/jpeg;base64,${book.book_img}`"
-            alt="book cover"
-            class="book-image"
-          />
+          <img v-if="book.book_img" :src="`data:image/jpeg;base64,${book.book_img}`" alt="book cover"
+            class="book-image" />
           <div v-else class="book-image-placeholder">暂无图片</div>
 
           <!-- 书籍信息 -->
@@ -142,7 +129,7 @@ onMounted(async () => {
     await setActive(titleList[0], titleList[0].value);
   }
   console.log(bookLists.value);
-  
+
   window.addEventListener("scroll", handleScroll);
 });
 
@@ -172,13 +159,15 @@ watch(isSearch, async (newValue) => {
   display: inline-flex;
   justify-content: space-between;
   margin-bottom: 20px;
-  transition: opacity 0.3s ease; /* 添加过渡效果 */
+  transition: opacity 0.3s ease;
+  /* 添加过渡效果 */
 }
 
 /* 添加不可见状态的样式 */
 .invisible {
   opacity: 0;
-  pointer-events: none; /* 防止点击不可见的导航栏 */
+  pointer-events: none;
+  /* 防止点击不可见的导航栏 */
 }
 
 .title-inner {
@@ -198,9 +187,10 @@ watch(isSearch, async (newValue) => {
   font-weight: bold;
 }
 
-/* 书籍列表容器（固定高度 + 滚动隐藏） */
+/* 书籍列表容器 */
 .book-list-container {
-  max-height: 600px;
+  max-height: calc(100vh - 170px);
+  /* 改为视口高度减去顶部导航和边距的高度 */
   overflow-y: auto;
   position: relative;
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 90%, rgba(0, 0, 0, 0));
@@ -215,8 +205,9 @@ watch(isSearch, async (newValue) => {
 
 /* 瀑布流布局 */
 .book-list-masonry {
-  column-gap: 20px; /* 默认列间距 */
-  padding: 20px;
+  column-gap: 20px;
+  padding: 20px 20px 40px 20px;
+  /* 增加底部padding，避免最后一行被渐变遮住 */
 }
 
 /* 大屏幕：4 列 */
@@ -249,14 +240,16 @@ watch(isSearch, async (newValue) => {
 
 /* 书籍项样式 */
 .book-item {
-  break-inside: avoid; /* 防止内容被分割 */
+  break-inside: avoid;
+  /* 防止内容被分割 */
   background: #fff;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease;
   cursor: pointer;
-  margin-bottom: 20px; /* 书籍项之间的间距 */
+  margin-bottom: 20px;
+  /* 书籍项之间的间距 */
 }
 
 .book-item:hover {
@@ -312,7 +305,8 @@ watch(isSearch, async (newValue) => {
   right: 20px;
   width: 50px;
   height: 50px;
-  background: rgba(128, 128, 128, 0.7); /* 半透明灰色 */
+  background: rgba(128, 128, 128, 0.7);
+  /* 半透明灰色 */
   color: #fff;
   font-size: 20px;
   border: none;
@@ -326,7 +320,8 @@ watch(isSearch, async (newValue) => {
 }
 
 .back-to-top:hover {
-  background: rgba(128, 128, 128, 0.9); /* 悬停时加深颜色 */
+  background: rgba(128, 128, 128, 0.9);
+  /* 悬停时加深颜色 */
 }
 
 .back-to-top:active {
@@ -335,7 +330,8 @@ watch(isSearch, async (newValue) => {
 
 .arrow {
   font-size: 24px;
-  transform: translateY(-2px); /* 调整箭头位置 */
+  transform: translateY(-2px);
+  /* 调整箭头位置 */
 }
 
 /* 遮罩层 */
@@ -357,6 +353,7 @@ watch(isSearch, async (newValue) => {
 .fade-leave-active {
   transition: opacity 0.3s;
 }
+
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
@@ -375,7 +372,8 @@ watch(isSearch, async (newValue) => {
 }
 
 .fade-masonry-leave-active {
-  position: absolute; /* 确保离开的元素不会影响布局 */
+  position: absolute;
+  /* 确保离开的元素不会影响布局 */
 }
 
 /* 加载指示器样式 */
@@ -400,6 +398,7 @@ watch(isSearch, async (newValue) => {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
