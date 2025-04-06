@@ -1,8 +1,16 @@
 <template>
   <div>
-    <div class="outer-overlay" v-if="showLogin" @click="closeDialog">
+    <div class="outer-overlay" v-if="showLogin" @click="closeLoginDialog">
       <div class="inner-overlay" @click.stop>
-        <Login :showLogin="showLogin" class="Login" @update:showLogin="updateShowLogin"></Login>
+        <Login :showLogin="showLogin" class="Login" @update:showLogin="updateShowLogin"
+          @showRegister="showRegisterForm" />
+      </div>
+    </div>
+
+    <div class="outer-overlay" v-if="showRegister" @click="closeRegisterDialog">
+      <div class="inner-overlay" @click.stop>
+        <Register :showRegister="showRegister" class="Register" @update:showRegister="updateShowRegister"
+          @showLogin="showLoginForm" />
       </div>
     </div>
 
@@ -42,7 +50,7 @@
             <img v-else class="icon me" :src="`data:image/png;base64,${userThing.avatar_base64}`" alt="用户头像"> 我
           </span>
         </RouterLink>
-        <div v-if="!isLogin" class="login" @click="showLogin = true">登录</div>
+        <div v-if="!isLogin" class="login" @click="openLoginDialog">登录</div>
         <div ref="moreButton" @click="showDropDown" class="more" :class="['my-txt']">
           <img class="more_pic" src="@/assets/img/more_.png" alt="">
           更多
@@ -66,26 +74,45 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Login from "../login/Login.vue";
-import { userInfoStore } from "../../store/user";
+import Register from "../login/Register.vue";
+import { userInfoStore } from '../../store/user';
 import { storeToRefs } from 'pinia';
 import { searchStore } from "@/store/search";
 import { articleStore } from '../../store/article';
+import { ElMessage } from 'element-plus';
 
 const useArticleStore = articleStore();
 const { filterContent } = useArticleStore;
 const userStore = userInfoStore();
-const { isLogin, showLogin, userThing } = storeToRefs(userStore);
+const { isLogin, userThing, showLogin } = storeToRefs(userStore);
 const search = searchStore();
 const { isSearch } = storeToRefs(search);
-const { resetSearch } = search;  // 获取重置方法
+const { resetSearch } = search;
 console.log(userThing.value);
 
 const router = useRouter();
 const route = useRoute();
 
-const closeDialog = () => {
-  showLogin.value = false;
-}
+// 控制对话框显示
+// const showLogin = ref(false);  // 删除本地 showLogin
+const showRegister = ref(false);
+
+// 对话框控制函数
+const openLoginDialog = () => {
+  userStore.showLogin = true;  // 修改为使用 store 的 showLogin
+};
+
+const closeLoginDialog = () => {
+  userStore.showLogin = false;  // 修改为使用 store 的 showLogin
+};
+
+const openRegisterDialog = () => {
+  showRegister.value = true;
+};
+
+const closeRegisterDialog = () => {
+  showRegister.value = false;
+};
 
 const externalLink = "http://localhost:5174/";
 
@@ -110,7 +137,21 @@ const showDropDown = () => {
 };
 
 const updateShowLogin = (value) => {
-  showLogin.value = value;
+  userStore.showLogin = value;
+}
+
+const updateShowRegister = (value) => {
+  showRegister.value = value;
+}
+
+const showRegisterForm = (value) => {
+  userStore.showLogin = false;
+  showRegister.value = value;
+}
+
+const showLoginForm = (value) => {
+  showRegister.value = false;
+  userStore.showLogin = value;
 }
 
 // 只设置搜索状态为false，不处理内容过滤
@@ -136,6 +177,7 @@ const logout = () => {
   userStore.logout();
   showDrop.value = false;
   router.push('/Discover');
+  ElMessage.success('已退出登录');
 };
 
 const handleOutsideClick = (event) => {
@@ -178,11 +220,15 @@ onMounted(() => {
 }
 
 .Login {
-  outline: none;
+  background-color: white;
+  border-radius: 10px;
   width: 400px;
-  height: 240px;
-  background-color: #fff;
-  border-radius: 20px;
+}
+
+.Register {
+  background-color: white;
+  border-radius: 10px;
+  width: 500px;
 }
 
 .mainBody-wrapper {

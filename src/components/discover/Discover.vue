@@ -59,8 +59,11 @@ const breakpoints = ref({
 
 // 文章选择处理
 function selectArticle(item) {
+  console.log('点击了文章，当前登录状态:', isLogin.value);
   if (!isLogin.value) {
-    showLogin.value = true;
+    console.log('用户未登录，尝试显示登录框');
+    userStore.showLogin = true;
+    console.log('设置后的 showLogin 值:', userStore.showLogin);
     return;
   }
 
@@ -139,6 +142,25 @@ onMounted(async () => {
     }
   }
 });
+
+// 打开文章详情
+const openArticleDetail = (article) => {
+  console.log('尝试打开文章详情，当前登录状态:', isLogin.value);
+  if (!isLogin.value) {
+    console.log('用户未登录，尝试显示登录框');
+    userStore.showLogin = true;
+    console.log('设置后的 showLogin 值:', userStore.showLogin);
+    return;
+  }
+  selectedArticle.value = {
+    image: `data:image/jpeg;base64,${article.img}`,
+    title: article.title,
+    author: article.author,
+    content: article.content,
+    author_id: article.authorId,
+    article_id: article.articleId,
+  };
+};
 </script>
 
 <template>

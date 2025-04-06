@@ -19,6 +19,11 @@
       :report-content-id="book.book_id" :reporter-id="user.userThing.id" :extra-data="{ seller_id: book.seller_id }"
       @close="closeReportDialog" />
 
+    <!-- 针对用户的举报对话框 -->
+    <ReportDialog :is-visible="isUserReportDialogVisible" content-type="user" :target-id="book.seller_id"
+      :report-content-id="book.seller_id" :reporter-id="user.userThing.id" :extra-data="{ from: 'book' }"
+      @close="closeUserReportDialog" />
+
     <!-- 左侧书籍封面 -->
     <div class="book-image-container">
       <img :src="book.image" alt="书籍封面" class="book-image" />
@@ -42,7 +47,15 @@
       <div v-if="isLoading" class="seller-loading">加载卖家信息中...</div>
       <div v-else-if="seller" class="seller-info">
         <div v-if="!seller.avatar_base64" class="avatar-skeleton"></div>
-        <img v-else :src="`data:image/png;base64,${seller.avatar_base64}`" alt="卖家头像" class="seller-avatar" />
+        <div v-else class="avatar-container">
+          <img :src="`data:image/png;base64,${seller.avatar_base64}`" alt="卖家头像" class="seller-avatar"
+            @contextmenu.prevent="handleAvatarRightClick" />
+
+          <!-- 简单的自定义右键菜单 -->
+          <div v-if="isUserContextMenuVisible" class="custom-menu">
+            <div class="menu-item" @click="showUserReportDialog">举报</div>
+          </div>
+        </div>
         <p class="seller-name">{{ seller.username }}</p>
       </div>
       <div v-else class="seller-error">获取卖家信息失败</div>
@@ -86,6 +99,8 @@ const seller = ref(null);  // 卖家信息
 const isLoading = ref(true);  // 加载状态
 const error = ref(null);  // 错误信息
 const isReportDialogVisible = ref(false);
+const isUserReportDialogVisible = ref(false);
+const isUserContextMenuVisible = ref(false);
 
 // 添加到购物车的函数
 const addCart = async (userId, bookId) => {
@@ -131,6 +146,44 @@ const showReportDialog = () => {
 
 const closeReportDialog = () => {
   isReportDialogVisible.value = false;
+};
+
+// 处理头像右键点击事件
+const handleAvatarRightClick = (event) => {
+  event.preventDefault();
+  if (!user.isLogin) {
+    ElMessage.warning("请先登录！");
+    return;
+  }
+
+  // 显示菜单
+  isUserContextMenuVisible.value = true;
+
+  // 添加全局点击事件来关闭菜单
+  setTimeout(() => {
+    document.addEventListener('click', closeContextMenu);
+  }, 0);
+};
+
+// 关闭上下文菜单
+const closeContextMenu = () => {
+  isUserContextMenuVisible.value = false;
+  document.removeEventListener('click', closeContextMenu);
+};
+
+// 显示针对用户的举报对话框
+const showUserReportDialog = () => {
+  if (!user.isLogin) {
+    ElMessage.warning("请先登录！");
+    return;
+  }
+  isUserReportDialogVisible.value = true;
+  isUserContextMenuVisible.value = false; // 关闭上下文菜单
+};
+
+// 关闭针对用户的举报对话框
+const closeUserReportDialog = () => {
+  isUserReportDialogVisible.value = false;
 };
 </script>
 
@@ -225,13 +278,19 @@ const closeReportDialog = () => {
   margin-right: 12px;
 }
 
+.avatar-container {
+  position: relative;
+  margin-right: 12px;
+}
+
 .seller-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  margin-right: 12px;
   border: 2px solid #fff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  cursor: context-menu;
+  /* 提示用户这里可以右键 */
 }
 
 .seller-name {
@@ -319,6 +378,33 @@ const closeReportDialog = () => {
 
 .report-btn:hover {
   color: #333;
+}
+
+/* 自定义右键菜单样式 */
+.custom-menu {
+  position: absolute;
+  left: -7px;
+  bottom: -38px;
+  background: white;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  z-index: 10002;
+  min-width: 60px;
+}
+
+.menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #606266;
+  text-align: center;
+  white-space: nowrap;
+  transition: all 0.3s;
+}
+
+.menu-item:hover {
+  background-color: #f5f5f5;
+  color: #409eff;
 }
 
 @keyframes fadeIn {

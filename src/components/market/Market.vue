@@ -55,12 +55,24 @@ import BookDetail from "./book_detail/book_detail.vue";
 import { titleStore } from "../../store/title";
 import { bookStore } from "../../store/books";
 import { searchStore } from "../../store/search";
+import { userInfoStore } from "../../store/user";
 
 // 选中的书籍
 const selectedBook = ref(null);
 
+// 使用 userStore
+const userStore = userInfoStore();
+const { isLogin, showLogin } = storeToRefs(userStore);
+
 // 打开书籍详情
 const openBookDetail = (book) => {
+  console.log('点击了书籍，当前登录状态:', isLogin.value);
+  if (!isLogin.value) {
+    console.log('用户未登录，尝试显示登录框');
+    userStore.showLogin = true;
+    console.log('设置后的 showLogin 值:', userStore.showLogin);
+    return;
+  }
   selectedBook.value = {
     image: `data:image/jpeg;base64,${book.book_img}`,
     title: book.book_title,

@@ -1,8 +1,15 @@
 <template>
   <div :class="['main-area', { subcomment: grandparent_id }]" v-bind="$attrs">
     <div class="img-wrapper">
-      <img :src="`data:image/png;base64,${avatar}`"
-        :style="{ width: grandparent_id ? '24px' : '40px', height: grandparent_id ? '24px' : '40px' }" alt="">
+      <div class="avatar-container">
+        <img :src="`data:image/png;base64,${avatar}`"
+          :style="{ width: grandparent_id ? '24px' : '40px', height: grandparent_id ? '24px' : '40px' }" alt=""
+          @contextmenu.prevent="handleAvatarRightClick">
+
+        <div v-if="isUserContextMenuVisible" class="custom-menu">
+          <div class="menu-item" @click="showUserReportDialog">举报</div>
+        </div>
+      </div>
     </div>
     <div class="content-wrapper">
       <div class="username">{{ userName }}</div>
@@ -48,6 +55,10 @@
 
   <ReportDialog :is-visible="isReportDialogVisible" content-type="comment" :target-id="comment.comment_id"
     :report-content-id="comment.comment_id" :reporter-id="user_id" @close="closeReportDialog" />
+
+  <ReportDialog :is-visible="isUserReportDialogVisible" content-type="user" :target-id="comment.user_id"
+    :report-content-id="comment.user_id" :reporter-id="user_id" :extra-data="{ from: 'comment' }"
+    @close="closeUserReportDialog" />
 </template>
 
 <script setup>
@@ -87,6 +98,8 @@ const subCommentUserName = ref('');
 const subCommentCount = computed(() => subComments.value.length);
 
 const isReportDialogVisible = ref(false);
+const isUserReportDialogVisible = ref(false);
+const isUserContextMenuVisible = ref(false);
 
 // 获取用户信息
 const searchUserById = async (userId) => {
@@ -197,6 +210,44 @@ const closeReportDialog = () => {
   console.log('Closing report dialog');
   isReportDialogVisible.value = false;
 };
+
+// 处理头像右键点击事件
+const handleAvatarRightClick = (event) => {
+  event.preventDefault();
+  if (!isLogin.value) {
+    showLogin.value = true;
+    return;
+  }
+
+  // 显示菜单
+  isUserContextMenuVisible.value = true;
+
+  // 添加全局点击事件来关闭菜单
+  setTimeout(() => {
+    document.addEventListener('click', closeContextMenu);
+  }, 0);
+};
+
+// 关闭上下文菜单
+const closeContextMenu = () => {
+  isUserContextMenuVisible.value = false;
+  document.removeEventListener('click', closeContextMenu);
+};
+
+// 显示针对用户的举报对话框
+const showUserReportDialog = () => {
+  if (!isLogin.value) {
+    showLogin.value = true;
+    return;
+  }
+  isUserReportDialogVisible.value = true;
+  isUserContextMenuVisible.value = false; // 关闭上下文菜单
+};
+
+// 关闭针对用户的举报对话框
+const closeUserReportDialog = () => {
+  isUserReportDialogVisible.value = false;
+};
 </script>
 
 <style scoped>
@@ -212,8 +263,13 @@ const closeReportDialog = () => {
   flex-shrink: 0;
 }
 
+.avatar-container {
+  position: relative;
+}
+
 .img-wrapper img {
   border-radius: 50%;
+  cursor: context-menu;
 }
 
 .content-wrapper {
@@ -368,5 +424,32 @@ button .heart {
 
 :global(.el-popper) {
   z-index: 10001 !important;
+}
+
+/* 自定义右键菜单样式 */
+.custom-menu {
+  position: absolute;
+  left: -7px;
+  bottom: -38px;
+  background: white;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  z-index: 10002;
+  min-width: 60px;
+}
+
+.menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #606266;
+  text-align: center;
+  white-space: nowrap;
+  transition: all 0.3s;
+}
+
+.menu-item:hover {
+  background-color: #f5f5f5;
+  color: #409eff;
 }
 </style>

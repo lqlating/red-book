@@ -1,9 +1,8 @@
 // src/stores/userStore.js
 import { defineStore } from "pinia";
 import { ref, reactive } from "vue";
-import axios from 'axios';
 import { ElMessage } from "element-plus";
-import subscriptApi from "../api/subscriptApi";
+import userApi from "../api/userApi";
 
 // 检查存储的数据是否过期
 const isDataExpired = (timestamp) => {
@@ -31,11 +30,11 @@ export const userInfoStore = defineStore('user', () => {
     const password = ref('');
 
     // 用户是否已登录以及是否显示登录框
-    let isLogin = ref(!!getStoredUserData());
-    let showLogin = ref(false);
+    const isLogin = ref(!!getStoredUserData());
+    const showLogin = ref(false);
 
     // 用户目标 ID 列表
-    let targetIds = ref([]);
+    const targetIds = ref([]);
 
     // 用户信息对象，包含各种用户属性
     const userThing = reactive({
@@ -43,6 +42,7 @@ export const userInfoStore = defineStore('user', () => {
         email: '',
         id: '',
         avatar_base64: '',
+        account: '',
         subscript: 0,
         introduction: '',
         gender: '',
@@ -57,58 +57,57 @@ export const userInfoStore = defineStore('user', () => {
         Object.assign(userThing, storedUserInfo);
     }
 
+    // 设置用户信息
+    const setUserInfo = (userData) => {
+        Object.assign(userThing, userData);
+        // 保存用户信息到 sessionStorage
+        sessionStorage.setItem('userInfo', JSON.stringify({
+            data: userData,
+            timestamp: new Date().getTime()
+        }));
+        isLogin.value = true;
+    };
+
     // 提交登录信息
-    const submitLogin = () => {
-        const loginRequest = {
-            account: account.value,
-            password: password.value
-        };
+    const submitLogin = async () => {
+        try {
+            const response = await userApi.login(account.value, password.value);
+            const { data } = response;
 
-        axios.post('http://localhost:8080/api/login', loginRequest)
-            .then(({ data }) => {
-                if (data && data.code === 0) {
-                    console.error('Error:', data.msg);
-                    ElMessage.error("密码或者账号错误，请重新输入");
-                    account.value = '';
-                    password.value = '';
-                } else {
-                    const userData = {
-                        username: data.data.username,
-                        email: data.data.email,
-                        id: data.data.id,
-                        avatar_base64: data.data.avatar_base64,
-                        gender: data.data.gender,
-                        introduction: data.data.introduction,
-                        fans: data.data.fans,
-                        subscript: data.data.subscript,
-                        is_banned: data.data.is_banned,
-                        ban_until: data.data.ban_until
-                    };
-
-                    Object.assign(userThing, userData);
-                    // 继续使用 sessionStorage
-                    sessionStorage.setItem('userInfo', JSON.stringify({
-                        data: userData,
-                        timestamp: new Date().getTime()
-                    }));
-
-                    account.value = '';
-                    password.value = '';
-                    isLogin.value = true;
-                    ElMessage.success("登录成功");
-
-                    // 添加一个短暂的延时，确保数据保存后再刷新页面
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 500);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
+            if (data && data.code === 0) {
                 ElMessage.error("密码或者账号错误，请重新输入");
                 account.value = '';
                 password.value = '';
-            });
+            } else {
+                const userData = {
+                    username: data.data.username,
+                    email: data.data.email,
+                    id: data.data.id,
+                    avatar_base64: data.data.avatar_base64,
+                    gender: data.data.gender,
+                    introduction: data.data.introduction,
+                    fans: data.data.fans,
+                    subscript: data.data.subscript,
+                    is_banned: data.data.is_banned,
+                    ban_until: data.data.ban_until
+                };
+
+                setUserInfo(userData);
+                account.value = '';
+                password.value = '';
+                ElMessage.success("登录成功");
+
+                // 添加一个短暂的延时，确保数据保存后再刷新页面
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            ElMessage.error("密码或者账号错误，请重新输入");
+            account.value = '';
+            password.value = '';
+        }
     };
 
     // 退出登录
@@ -123,7 +122,8 @@ export const userInfoStore = defineStore('user', () => {
             username: '',
             email: '',
             id: '',
-            avatar_base64: '', // 清空 base64 头像数据
+            avatar_base64: '',
+            account: '',
             subscript: 0,
             introduction: '',
             gender: '',
@@ -138,10 +138,12 @@ export const userInfoStore = defineStore('user', () => {
     // 获取目标 ID 列表
     const fetchTargetIds = async (userId) => {
         try {
-            const response = await subscriptApi.getTargetId(userId);
-            targetIds.value = response.data.data; // 直接将响应结果赋值给 targetIds
+            const response = await userApi.getSubscriptions(userId);
+            if (response.data.code === 1) {
+                targetIds.value = response.data.data;
+            }
         } catch (error) {
-            console.error('请求失败:', error);
+            console.error('获取订阅列表失败:', error);
         }
     };
 
@@ -151,44 +153,102 @@ export const userInfoStore = defineStore('user', () => {
             // 防止用户关注自己
             if (authorId === userThing.id) {
                 ElMessage.warning("不能关注自己！");
-                return; // 退出函数，避免继续执行
+                return false;
             }
 
-            const response = await subscriptApi.insertSubscript(userThing.id, authorId);
-            // 根据 code 字段判断
+            const response = await userApi.subscribeUser(userThing.id, authorId);
             if (response?.data?.code === 1) {
-                await fetchTargetIds(userThing.id); // 刷新 targetIds
-                // ElMessage.success(response.data.data || "关注成功");
+                await fetchTargetIds(userThing.id);
+                ElMessage.success("关注成功");
+                return true;
             } else {
-                // 如果 code 不是 1，显示错误信息
                 ElMessage.error(response.data.data || "关注失败");
+                return false;
             }
         } catch (error) {
-            // 捕获异常并记录日志
             console.error('关注失败:', error);
             ElMessage.error(error.response?.data?.data || "关注失败");
+            return false;
         }
     };
 
     // 取消订阅（取消关注）作者
     const deleteSubscript = async (authorId) => {
         try {
-            const response = await subscriptApi.deleteSubscript(userThing.id, authorId);
-            // 根据 code 字段判断
+            const response = await userApi.unsubscribeUser(userThing.id, authorId);
             if (response?.data?.code === 1) {
-                await fetchTargetIds(userThing.id); // 刷新 targetIds
-                // ElMessage.success(response.data.data || "取消关注成功");
+                await fetchTargetIds(userThing.id);
+                ElMessage.success("取消关注成功");
+                return true;
             } else {
-                // 如果 code 不是 1，显示错误信息
                 ElMessage.error(response.data.data || "取消关注失败");
+                return false;
             }
         } catch (error) {
-            // 捕获异常并记录日志
             console.error('取消关注失败:', error);
             ElMessage.error(error.response?.data?.data || "取消关注失败");
+            return false;
         }
     };
 
+    // 根据ID查找用户
+    const searchUserById = async (userId) => {
+        try {
+            const response = await userApi.SearchUserById(userId);
+            return response.data;
+        } catch (error) {
+            console.error('查找用户失败:', error);
+            return null;
+        }
+    };
+
+    // 根据用户名查找用户
+    const searchUserByUsername = async (username) => {
+        try {
+            const response = await userApi.SearchUserByUsername(username);
+            return response.data;
+        } catch (error) {
+            console.error('查找用户失败:', error);
+            return null;
+        }
+    };
+
+    // 更新用户信息
+    const updateUserInfo = async (userUpdateData) => {
+        try {
+            const response = await userApi.updateUserInfo(userUpdateData);
+            if (response.data.code === 1) {
+                setUserInfo({ ...userThing, ...response.data.data });
+                ElMessage.success("信息更新成功");
+                return true;
+            } else {
+                ElMessage.error(response.data.msg || "更新失败");
+                return false;
+            }
+        } catch (error) {
+            console.error('更新用户信息失败:', error);
+            ElMessage.error("更新失败，请稍后再试");
+            return false;
+        }
+    };
+
+    // 注册新用户
+    const register = async (formData) => {
+        try {
+            const response = await userApi.register(formData);
+            if (response.data && response.data.code === 1) {
+                ElMessage.success("注册成功");
+                return true;
+            } else {
+                ElMessage.error(response.data?.msg || "注册失败");
+                return false;
+            }
+        } catch (error) {
+            console.error('注册失败:', error);
+            ElMessage.error(error.response?.data?.msg || "注册失败，请稍后再试");
+            return false;
+        }
+    };
 
     // 仅当 userThing.id 有值时才调用
     if (userThing.id) {
@@ -206,5 +266,10 @@ export const userInfoStore = defineStore('user', () => {
         logout,
         insertSubscript,
         deleteSubscript,
+        searchUserById,
+        searchUserByUsername,
+        updateUserInfo,
+        register,
+        setUserInfo
     };
 });

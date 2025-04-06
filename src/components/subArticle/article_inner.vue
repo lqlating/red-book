@@ -6,8 +6,16 @@
     </span>
     <span>
       <div class="user-inner">
-        <img v-if="avatar" :src="avatar ? `data:image/png;base64,${avatar}` : '/images/default_image.jpg'"
-          alt="User Avatar" />
+        <!-- 头像使用右键点击 -->
+        <div class="avatar-container">
+          <img v-if="avatar" :src="avatar ? `data:image/png;base64,${avatar}` : '/images/default_image.jpg'"
+            alt="User Avatar" @contextmenu.prevent="handleAvatarRightClick" />
+
+          <!-- 简单的自定义右键菜单 -->
+          <div v-if="isUserContextMenuVisible" class="custom-menu">
+            <div class="menu-item" @click="showUserReportDialog">举报</div>
+          </div>
+        </div>
         <span class="username-info" v-if="userName">{{ userName }}</span>
         <span class="subscribe" @click="subscribe()" v-show="!is_subscript">关注</span>
         <span class="no_subscribe" @click="subscribe()" v-show="is_subscript && isLogin">已关注</span>
@@ -50,10 +58,15 @@
   </div>
   <div class="mask" v-if="localArticleInner" @click="closeArticleInner"></div>
 
-  <!-- 添加举报对话框组件 -->
+  <!-- 针对文章的举报对话框 -->
   <ReportDialog :is-visible="isReportDialogVisible" content-type="article" :target-id="article_id"
     :report-content-id="article_id" :reporter-id="currentUserId" :extra-data="{ author_id: author_id }"
     @close="closeReportDialog" />
+
+  <!-- 针对用户的举报对话框 -->
+  <ReportDialog :is-visible="isUserReportDialogVisible" content-type="user" :target-id="author_id"
+    :report-content-id="author_id" :reporter-id="currentUserId" :extra-data="{ from: 'avatar' }"
+    @close="closeUserReportDialog" />
 </template>
 
 <script setup>
@@ -104,6 +117,8 @@ const userName = ref("");
 const avatar = ref("");
 const isOverlayOpen = ref(false); // 控制遮罩层的状态
 const isReportDialogVisible = ref(false);
+const isUserReportDialogVisible = ref(false);
+const isUserContextMenuVisible = ref(false);
 
 // 计算属性
 const commentCount = computed(() => commentCountByArticleId[article_id] || 0);
@@ -126,12 +141,10 @@ async function loadArticleData() {
   try {
     userName.value = "";
     avatar.value = "";
-
     const result = await userApi.SearchUserById(author_id);
     userInfo.value = result.data.data[0];
     userName.value = userInfo.value.username;
     avatar.value = userInfo.value.avatar_base64;
-
     await getComments(article_id);
     await getCommentCount(article_id);
   } catch (error) {
@@ -159,17 +172,15 @@ function subscribe() {
 function openOverlay() {
   isOverlayOpen.value = true;
 }
-
 function closeOverlay() {
   isOverlayOpen.value = false;
 }
-
 // 关闭文章详情的逻辑
 function closeArticleInner() {
   props.close();
 }
 
-// 显示举报对话框
+// 显示针对文章的举报对话框
 const showReportDialog = () => {
   if (!isLogin.value) {
     showLogin.value = true;
@@ -177,39 +188,68 @@ const showReportDialog = () => {
   }
   isReportDialogVisible.value = true;
 };
-
-// 关闭举报对话框
+// 关闭针对文章的举报对话框
 const closeReportDialog = () => {
   console.log('Closing dialog');
   isReportDialogVisible.value = false;
 };
 
-// 生命周期：组件挂载时加载数据
+// 显示针对用户的举报对话框
+const showUserReportDialog = () => {
+  if (!isLogin.value) {
+    showLogin.value = true;
+    return;
+  }
+  isUserReportDialogVisible.value = true;
+  isUserContextMenuVisible.value = false; // 关闭上下文菜单
+};
+// 关闭针对用户的举报对话框
+const closeUserReportDialog = () => {
+  isUserReportDialogVisible.value = false;
+};
+
+// 处理头像右键点击事件
+const handleAvatarRightClick = (event) => {
+  event.preventDefault();
+  if (!isLogin.value) {
+    showLogin.value = true;
+    return;
+  }
+
+  // 显示菜单
+  isUserContextMenuVisible.value = true;
+
+  // 添加全局点击事件来关闭菜单
+  setTimeout(() => {
+    document.addEventListener('click', closeContextMenu);
+  }, 0);
+};
+
+// 关闭上下文菜单
+const closeContextMenu = () => {
+  isUserContextMenuVisible.value = false;
+  document.removeEventListener('click', closeContextMenu);
+};
+
 onMounted(() => {
   tempSubComment.article_id = article_id;
   tempSubComment.user_id = userThing.value.id;
   loadArticleData();
 });
 
-// 监听 props.article 的变化，动态更新数据
-watch(
-  () => props.article,
-  async (newValue) => {
-    articleTitle = newValue.title;
-    img_url = newValue.img_url;
-    like_count = newValue.like_count;
-    star_count = newValue.star_count;
-    author_id = newValue.author_id;
-    content = newValue.content;
-    article_id = newValue.article_id;
-    publication_time = newValue.publication_time;
-    address = newValue.address;
-
-    await loadArticleData();
-  }
-);
+watch(() => props.article, async (newValue) => {
+  articleTitle = newValue.title;
+  img_url = newValue.img_url;
+  like_count = newValue.like_count;
+  star_count = newValue.star_count;
+  author_id = newValue.author_id;
+  content = newValue.content;
+  article_id = newValue.article_id;
+  publication_time = newValue.publication_time;
+  address = newValue.address;
+  await loadArticleData();
+});
 </script>
-
 
 <style scoped>
 .article-inner {
@@ -231,33 +271,24 @@ watch(
   height: 100%;
   border-right: 1px solid #f1eeee;
   display: flex;
-  /* 使用 Flexbox */
   justify-content: center;
-  /* 水平居中 */
   align-items: center;
-  /* 垂直居中 */
   overflow: hidden;
-  /* 确保裁剪区域不显示溢出部分 */
 }
 
 .article_img_inner img {
   width: 100%;
   height: auto;
-  /* 高度自适应 */
   object-fit: cover;
-  /* 使用覆盖模式 */
 }
 
 .fit-height {
   height: 100%;
-  /* 高度为100% */
 }
 
 .fit-width {
   height: auto;
-  /* 高度自适应 */
   max-height: 100%;
-  /* 最大高度为100% */
 }
 
 .article_img_inner+span {
@@ -272,14 +303,49 @@ watch(
   width: 100%;
   display: flex;
   align-items: center;
+  position: relative;
+}
+
+/* 头像容器样式 */
+.avatar-container {
+  position: relative;
+  margin-right: 12px;
 }
 
 .user-inner img {
-  margin-right: 12px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
   border: 1px solid rgb(205, 189, 189);
+  cursor: context-menu;
+  /* 提示用户这里可以右键 */
+}
+
+/* 自定义右键菜单样式 */
+.custom-menu {
+  position: absolute;
+  left: -7px;
+  bottom: -38px;
+  background: white;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  z-index: 10002;
+  min-width: 60px;
+}
+
+.menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #606266;
+  text-align: center;
+  white-space: nowrap;
+  transition: all 0.3s;
+}
+
+.menu-item:hover {
+  background-color: #f5f5f5;
+  color: #409eff;
 }
 
 .username-info {
@@ -368,14 +434,11 @@ watch(
   width: 100%;
   height: 100%;
   background: rgba(255, 255, 255, 0.7);
-  /* 毛玻璃效果 */
   backdrop-filter: blur(5px);
-  /* 背景模糊 */
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 10000;
-  /* 确保在最上层 */
 }
 
 .overlay-image {
@@ -433,7 +496,6 @@ watch(
   color: #666;
 }
 
-/* 使用 :global 来确保样式能够影响到 teleported 的下拉菜单 */
 :global(.el-popper) {
   z-index: 10001 !important;
 }
