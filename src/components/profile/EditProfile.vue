@@ -8,29 +8,28 @@
         <div class="edit-profile-form">
             <div class="input-group">
                 <label>用户名</label>
-                <input type="text" v-model="formData.username" placeholder="请输入用户名" @blur="validateField('username')">
+                <input type="text" v-model="formData.username" placeholder="请输入用户名" @input="validateContent">
                 <div class="error-message" v-if="errors.username">{{ errors.username }}</div>
             </div>
 
             <div class="input-group">
                 <label>邮箱</label>
-                <input type="email" v-model="formData.email" placeholder="请输入邮箱" @blur="validateField('email')">
+                <input type="email" v-model="formData.email" placeholder="请输入邮箱" @input="validateContent">
                 <div class="error-message" v-if="errors.email">{{ errors.email }}</div>
             </div>
 
             <div class="input-group">
                 <label>性别</label>
                 <div class="gender-options">
-                    <label><input type="radio" v-model="formData.gender" value="男"> 男</label>
-                    <label><input type="radio" v-model="formData.gender" value="女"> 女</label>
+                    <label><input type="radio" v-model="formData.gender" value="男" @change="validateContent"> 男</label>
+                    <label><input type="radio" v-model="formData.gender" value="女" @change="validateContent"> 女</label>
                 </div>
                 <div class="error-message" v-if="errors.gender">{{ errors.gender }}</div>
             </div>
 
             <div class="input-group">
                 <label>个人简介</label>
-                <textarea v-model="formData.introduction" placeholder="请输入个人简介"
-                    @blur="validateField('introduction')"></textarea>
+                <textarea v-model="formData.introduction" placeholder="请输入个人简介" @input="validateContent"></textarea>
                 <div class="error-message" v-if="errors.introduction">{{ errors.introduction }}</div>
             </div>
 
@@ -54,20 +53,24 @@
                 <div class="error-message" v-if="errors.avatar">{{ errors.avatar }}</div>
             </div>
 
-            <button class="update-btn" @click="handleUpdate">更新资料</button>
+            <button type="button" class="update-btn" @click="handleUpdate" :disabled="!isFormValid || hasDirtyWords"
+                :class="{ 'disabled-btn': !isFormValid || hasDirtyWords }" :title="buttonTooltip">
+                更新资料
+            </button>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { userInfoStore } from '../../store/user';
 import userApi from '../../api/userApi';
 import {
     validateUsername,
     validateEmail,
-    filterDirtyWords
+    filterDirtyWords,
+    containsDirtyWords
 } from '../../utils/formValidation';
 
 const props = defineProps({
@@ -96,6 +99,22 @@ const errors = reactive({
     avatar: ''
 });
 
+// 是否包含违禁词
+const hasDirtyWords = ref(false);
+// 按钮是否可用
+const isFormValid = ref(true);
+
+// 按钮提示文本
+const buttonTooltip = computed(() => {
+    if (hasDirtyWords.value) {
+        return '内容包含违禁词，请修改后再提交';
+    }
+    if (!isFormValid.value) {
+        return '请填写所有必填字段并确保格式正确';
+    }
+    return '提交修改';
+});
+
 const avatarPreview = ref(null);
 const fileInput = ref(null);
 
@@ -114,54 +133,32 @@ onMounted(() => {
         if (props.userData.avatar_base64) {
             avatarPreview.value = `data:image/png;base64,${props.userData.avatar_base64}`;
         }
+
+        // 初始验证一次表单
+        validateContent();
     }
 });
 
-// 验证单个字段
-const validateField = (field) => {
-    switch (field) {
-        case 'username':
-            const usernameResult = validateUsername(formData.username);
-            errors.username = usernameResult.valid ? '' : usernameResult.msg;
-            break;
-        case 'email':
-            errors.email = validateEmail(formData.email) ? '' : '邮箱格式不正确';
-            break;
-        case 'introduction':
-            if (formData.introduction) {
-                const filteredIntro = filterDirtyWords(formData.introduction);
-                if (filteredIntro !== formData.introduction) {
-                    formData.introduction = filteredIntro;
-                    ElMessage.warning('个人简介中包含不适当的内容，已自动过滤');
-                }
-            }
-            break;
-    }
-};
+// 实时验证内容是否包含违禁词和其他验证
+const validateContent = () => {
+    // 检查违禁词
+    const hasUsernameViolation = containsDirtyWords(formData.username);
+    const hasIntroViolation = containsDirtyWords(formData.introduction);
 
-// 验证整个表单
-const validateForm = () => {
-    let isValid = true;
+    // 更新错误信息
+    errors.username = hasUsernameViolation ? '用户名包含不适当内容' : '';
+    errors.introduction = hasIntroViolation ? '个人简介包含不适当内容' : '';
 
-    validateField('username');
-    validateField('email');
-    validateField('introduction');
+    // 设置是否有违禁词
+    hasDirtyWords.value = hasUsernameViolation || hasIntroViolation;
 
-    if (!formData.gender) {
-        errors.gender = '请选择性别';
-        isValid = false;
-    } else {
-        errors.gender = '';
-    }
+    // 检查其他字段
+    const usernameValid = validateUsername(formData.username).valid;
+    const emailValid = validateEmail(formData.email);
+    const genderValid = !!formData.gender;
 
-    for (const key in errors) {
-        if (errors[key]) {
-            isValid = false;
-            break;
-        }
-    }
-
-    return isValid;
+    // 更新表单是否有效
+    isFormValid.value = usernameValid && emailValid && genderValid;
 };
 
 const triggerFileInput = () => {
@@ -199,18 +196,20 @@ const closeDialog = () => {
 };
 
 const handleUpdate = async () => {
-    if (!validateForm()) {
-        for (const key in errors) {
-            if (errors[key]) {
-                ElMessage.error(errors[key]);
-                return;
-            }
-        }
+    // 再次检查是否有违禁词
+    if (hasDirtyWords.value) {
+        ElMessage.error('内容包含违禁词，无法提交');
+        return;
+    }
+
+    // 再次验证表单
+    validateContent();
+    if (!isFormValid.value) {
+        ElMessage.error('请填写所有必填字段并确保格式正确');
         return;
     }
 
     try {
-        // 准备更新数据
         const updateData = {
             id: formData.id,
             username: formData.username,
@@ -219,9 +218,7 @@ const handleUpdate = async () => {
             introduction: formData.introduction
         };
 
-        // 如果有新头像，需要处理base64数据
         if (formData.avatar_base64) {
-            // 如果是完整的base64字符串（包含data:image前缀），需要提取实际的base64部分
             if (formData.avatar_base64.startsWith('data:image')) {
                 updateData.avatar_base64 = formData.avatar_base64.split(',')[1];
             } else {
@@ -229,20 +226,15 @@ const handleUpdate = async () => {
             }
         }
 
-        // 直接调用API更新用户信息
         const response = await userApi.updateUserInfo(updateData);
 
         if (response.data && response.data.code === 1) {
             ElMessage.success('个人资料更新成功');
-
-            // 更新本地存储的用户信息
             userStore.setUserInfo({
                 ...props.userData,
                 ...updateData,
-                avatar_base64: updateData.avatar_base64 // 确保使用处理后的base64数据
+                avatar_base64: updateData.avatar_base64
             });
-
-            // 发出更新成功事件
             emits("update-success");
         } else {
             throw new Error(response.data?.msg || '更新失败');
@@ -508,5 +500,19 @@ const handleUpdate = async () => {
 
 .update-btn:active {
     transform: translateY(0);
+}
+
+.disabled-btn {
+    background-color: #cccccc !important;
+    color: #666666 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.disabled-btn:hover {
+    background-color: #cccccc !important;
+    transform: none !important;
+    box-shadow: none !important;
 }
 </style>
