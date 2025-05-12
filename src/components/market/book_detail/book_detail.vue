@@ -27,6 +27,12 @@
     <!-- 左侧书籍封面 -->
     <div class="book-image-container">
       <img :src="book.image || defaultBookCover" alt="书籍封面" class="book-image" @error="handleImageError" />
+      <div v-if="book.is_selled === 1" class="sold-overlay">
+        <span class="sold-text">已卖出</span>
+      </div>
+      <div v-else-if="book.is_review === 0" class="unreviewed-overlay">
+        <span class="unreviewed-text">未审核</span>
+      </div>
     </div>
 
     <!-- 中间分割线 -->
@@ -73,8 +79,9 @@
       <!-- 按钮区域 - 仅在不是我的书籍时显示 -->
       <div v-if="!isMyBooks" class="button-group">
         <!-- 修改联系卖家按钮的点击事件 -->
-        <button class="contact-btn" @click="contactSeller">联系卖家</button>
-        <button class="cart-btn" @click="addCart(user.userThing.id, book.book_id)">加入购物车</button>
+        <button class="contact-btn" @click="contactSeller" :disabled="book.is_selled === 1">联系卖家</button>
+        <button class="cart-btn" @click="addCart(user.userThing.id, book.book_id)"
+          :disabled="book.is_selled === 1">加入购物车</button>
       </div>
     </div>
 
@@ -518,6 +525,53 @@ const handleImageError = (e) => {
 .menu-item:hover {
   background-color: #f5f5f5;
   color: #409eff;
+}
+
+.sold-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.sold-text {
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 8px 16px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 4px;
+}
+
+.unreviewed-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.unreviewed-text {
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 8px 16px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 4px;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 @keyframes fadeIn {

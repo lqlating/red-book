@@ -43,6 +43,9 @@ onMounted(async () => {
                     <div v-if="totalUnreadCount.value > 0" class="unread-dot"></div>
                 </span>
             </RouterLink>
+            <RouterLink class="operation" to="/Notify/transactions" active-class="active">
+                买卖交易
+            </RouterLink>
         </div>
         <div class="main-area">
             <RouterView :key="router.currentRoute.path" />

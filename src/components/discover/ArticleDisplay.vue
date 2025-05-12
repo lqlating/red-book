@@ -3,11 +3,16 @@
     <Waterfall v-if="articleLists.length > 0" :list="articleLists" :breakpoints="breakpoints" :gutter="25">
       <template #item="{ item }">
         <div class="card" @contextmenu="(event) => $emit('contextmenu', event, item)">
-          <transition name="fade">
-            <LazyImg class="lazy" :url="`data:image/png;base64,${item.img_url}`"
-              @load="handleImageLoad(item.article_id)" :key="item.article_id + '-img'"
-              v-show="imageLoaded[item.article_id]" @click="selectArticle(item)" />
-          </transition>
+          <div class="image-container" @click="selectArticle(item)">
+            <transition name="fade">
+              <LazyImg class="lazy" :url="`data:image/png;base64,${item.img_url}`"
+                @load="handleImageLoad(item.article_id)" :key="item.article_id + '-img'"
+                v-show="imageLoaded[item.article_id]" />
+            </transition>
+            <div v-if="item.is_review === 0" class="unreviewed-overlay">
+              <span class="unreviewed-text">未审核</span>
+            </div>
+          </div>
           <p class="text" @click="selectArticle(item)">{{ item.title }}</p>
           <Like_button :item="item" :key="item.article_id + '-like'" />
         </div>
@@ -74,6 +79,12 @@ function closeArticleInner() {
   padding: 20px;
 }
 
+.image-container {
+  position: relative;
+  width: 100%;
+  cursor: pointer;
+}
+
 .lazy {
   border: 0.1px solid rgb(231, 227, 227);
   border-radius: 16px;
@@ -101,6 +112,28 @@ function closeArticleInner() {
 
 .lazy:hover::after {
   opacity: 1;
+}
+
+.unreviewed-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 16px;
+}
+
+.unreviewed-text {
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 8px 16px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 4px;
 }
 
 .text {

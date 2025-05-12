@@ -1,8 +1,13 @@
 <template>
   <div class="article-inner" v-if="localArticleInner">
     <span class="article_img_inner" @click="openOverlay">
-      <img :src="img_url ? `data:image/png;base64,${img_url}` : '/images/default_image.jpg'" alt="Article Image"
-        :class="{ 'fit-height': isTallImage, 'fit-width': !isTallImage }" />
+      <div class="image-container">
+        <img :src="img_url ? `data:image/png;base64,${img_url}` : '/images/default_image.jpg'" alt="Article Image"
+          :class="{ 'fit-height': isTallImage, 'fit-width': !isTallImage }" />
+        <div v-if="props.article.is_review === 0" class="unreviewed-overlay">
+          <span class="unreviewed-text">未审核</span>
+        </div>
+      </div>
     </span>
     <span>
       <div class="user-inner">
@@ -276,9 +281,15 @@ watch(() => props.article, async (newValue) => {
   overflow: hidden;
 }
 
-.article_img_inner img {
+.image-container {
+  position: relative;
   width: 100%;
-  height: auto;
+  height: 100%;
+}
+
+.image-container img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
 
@@ -498,5 +509,26 @@ watch(() => props.article, async (newValue) => {
 
 :global(.el-popper) {
   z-index: 10001 !important;
+}
+
+.unreviewed-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.unreviewed-text {
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 8px 16px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 4px;
 }
 </style>

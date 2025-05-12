@@ -18,7 +18,9 @@
                         image: book.book_img_base64 ? `data:image/jpeg;base64,${book.book_img_base64}` : defaultBookCover,
                         title: book.book_title,
                         author: book.book_writer,
-                        price: book.book_price
+                        price: book.book_price,
+                        is_selled: book.is_selled,
+                        is_review: book.is_review
                     }" @click="openBookDetail(book)" />
                 </div>
             </transition-group>
@@ -106,6 +108,8 @@ const openBookDetail = (book) => {
         description: book.book_descripe || '暂无描述',
         seller_id: book.book_seller_id || userId, // 使用书籍自带的seller_id或当前用户ID
         book_id: book.book_id,
+        is_selled: book.is_selled,
+        is_review: book.is_review
     };
 };
 

@@ -1,6 +1,14 @@
 <template>
     <div class="book-item" @click="$emit('click')">
-        <img :src="book.image" alt="书籍封面" class="book-image" />
+        <div class="book-image-container">
+            <img :src="book.image" alt="书籍封面" class="book-image" />
+            <div v-if="book.is_selled === 1" class="sold-overlay">
+                <span class="sold-text">已卖出</span>
+            </div>
+            <div v-else-if="book.is_review === 0" class="unreviewed-overlay">
+                <span class="unreviewed-text">未审核</span>
+            </div>
+        </div>
         <div class="book-info">
             <p class="book-title">{{ book.title }}</p>
             <p class="book-author">{{ book.author }}</p>
@@ -42,12 +50,61 @@ defineProps({
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
+.book-image-container {
+    position: relative;
+    width: 100%;
+}
+
 .book-image {
     width: 100%;
     height: 200px;
     object-fit: cover;
     border-radius: 12px 12px 0 0;
     /* 圆角仅在上方 */
+}
+
+.sold-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 12px 12px 0 0;
+}
+
+.sold-text {
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    padding: 8px 16px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 4px;
+}
+
+.unreviewed-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 12px 12px 0 0;
+}
+
+.unreviewed-text {
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    padding: 8px 16px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 4px;
 }
 
 .book-info {

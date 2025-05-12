@@ -48,7 +48,7 @@
         <button v-if="selectedItems.length > 6" @click="toggleShowMore" class="show-more-btn">
           {{ showMore ? "收起" : "展开全部商品" }} <span>{{ showMore ? "▲" : "▼" }}</span>
         </button>
-        <button class="checkout-btn" :disabled="selectedItems.length === 0">结算</button>
+        <button class="checkout-btn" :disabled="selectedItems.length === 0" @click="handleCheckout">结算</button>
       </div>
     </div>
   </div>
@@ -60,10 +60,13 @@ import { storeToRefs } from 'pinia';
 import Card from "./card/card.vue";
 import { cartStore } from "@/store/cart";
 import { userInfoStore } from "@/store/user";
+import { useTransactionStore } from "@/store/transaction";
+import { ElMessage } from 'element-plus';
 
 // 使用 storeToRefs 保持响应式
 const store = cartStore();
 const userStore = userInfoStore();
+const transactionStore = useTransactionStore();
 const { cartLists } = storeToRefs(store);
 const { fetchCartsByOwnerId, deleteCart, deleteCarts } = store;
 
@@ -167,6 +170,44 @@ const hoverItemIndex = ref(null);
 const removeFromCheckout = (item) => {
   item.selected = false; // 取消选中状态
 };
+
+// 添加结算方法
+const handleCheckout = async () => {
+  if (selectedItems.value.length === 0) {
+    return;
+  }
+
+  try {
+    // 为每个选中的商品创建交易申请
+    for (const item of selectedItems.value) {
+      const sellerId = item.book.seller_id || item.book.book_seller_id || item.book.owner_id;
+      const bookId = item.book.book_id;
+
+      // 创建交易申请
+      await transactionStore.createTransaction({
+        bookId,
+        buyerId: currentUserId,
+        sellerId
+      });
+    }
+
+    // 删除所有选中的购物车项
+    const cartIds = selectedItems.value.map(item => item.cart_id);
+    await deleteCarts(currentUserId, cartIds);
+
+    // 通过修改原始数据来取消选中，而不是直接修改计算属性
+    cartLists.value.forEach(item => {
+      item.selected = false;
+    });
+
+    ElMessage.success(`成功结算 ${cartIds.length} 件商品`);
+
+    // 重新获取购物车列表
+    await fetchCartsByOwnerId(currentUserId);
+  } catch (error) {
+    console.log('Processing checkout...');
+  }
+};
 </script>
 
 <style scoped>
@@ -231,7 +272,8 @@ const removeFromCheckout = (item) => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 480px;  /* 减小最大高度 */
+  max-height: 480px;
+  /* 减小最大高度 */
   overflow-y: auto;
   scrollbar-width: none;
   border-radius: 8px;
@@ -239,7 +281,8 @@ const removeFromCheckout = (item) => {
 
 .checkout-box {
   width: 250px;
-  max-height: 400px;  /* 限制结算框的最大高度，与列表保持一致 */
+  max-height: 400px;
+  /* 限制结算框的最大高度，与列表保持一致 */
   padding: 20px;
   background: #fff;
   border-radius: 8px;
@@ -280,9 +323,11 @@ const removeFromCheckout = (item) => {
   gap: 10px;
   justify-content: center;
   margin-bottom: 10px;
-  max-height: 250px;  /* 给结算框中的商品列表一个最大高度 */
+  max-height: 250px;
+  /* 给结算框中的商品列表一个最大高度 */
   overflow-y: auto;
-  scrollbar-width: none;  /* 隐藏滚动条 */
+  scrollbar-width: none;
+  /* 隐藏滚动条 */
 }
 
 .checkout-items::-webkit-scrollbar {

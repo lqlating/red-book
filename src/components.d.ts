@@ -46,6 +46,7 @@ declare module 'vue' {
     StarList: typeof import('./components/me/meInfo/StarList.vue')['default']
     SubArticle: typeof import('./components/subArticle/subArticle.vue')['default']
     Subscript: typeof import('./components/notify/newSubscript/subscript.vue')['default']
+    Transactions: typeof import('./components/notify/transactions.vue')['default']
     UserList: typeof import('./components/discover/UserList.vue')['default']
   }
 }
