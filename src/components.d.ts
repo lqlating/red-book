@@ -21,6 +21,7 @@ declare module 'vue' {
     Chlid: typeof import('./components/child/Chlid.vue')['default']
     Comment: typeof import('./components/comment/Comment.vue')['default']
     Discover: typeof import('./components/discover/Discover.vue')['default']
+    DiscoverTest: typeof import('./components/discover/DiscoverTest.vue')['default']
     EditProfile: typeof import('./components/profile/EditProfile.vue')['default']
     Like_button: typeof import('./components/subArticle/like_button.vue')['default']
     Like_comment: typeof import('./components/comment/like_comment/like_comment.vue')['default']
@@ -43,6 +44,7 @@ declare module 'vue' {
     ReportManagement: typeof import('./components/report/ReportManagement.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SimpleWaterfall: typeof import('./components/discover/SimpleWaterfall.vue')['default']
     Square: typeof import('./components/square/square.vue')['default']
     StarList: typeof import('./components/me/meInfo/StarList.vue')['default']
     SubArticle: typeof import('./components/subArticle/subArticle.vue')['default']
@@ -50,5 +52,7 @@ declare module 'vue' {
     Transactions: typeof import('./components/notify/transactions.vue')['default']
     UserList: typeof import('./components/discover/UserList.vue')['default']
     VirtualWaterfall: typeof import('./components/discover/VirtualWaterfall.vue')['default']
+    VirtualWaterfallTest: typeof import('./components/discover/VirtualWaterfallTest.vue')['default']
+    WaterfallTest: typeof import('./components/discover/WaterfallTest.vue')['default']
   }
 }

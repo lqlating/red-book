@@ -8,6 +8,14 @@ export const articleStore = defineStore('article', () => {
   const starCountMap = ref({}); // Dictionary to store star_count by article_id
   const filteredArticles = ref([]); // 用于存储搜索或过滤后的文章
 
+  // 分页状态管理
+  const currentPage = ref(1);
+  const hasMoreData = ref(true);
+  const isLoading = ref(false);
+  const currentCategory = ref('');
+  const currentSearchKeyword = ref('');
+  const isSearchMode = ref(false);
+
   // Fetch articles by category
   async function filterContent(value, page = 1, size = 20) {
     try {
@@ -167,6 +175,66 @@ export const articleStore = defineStore('article', () => {
     }
   }
 
+  // 加载更多文章（用于虚拟滚动）
+  async function loadMoreArticles() {
+    if (isLoading.value || !hasMoreData.value) {
+      return { success: false, hasMore: hasMoreData.value };
+    }
+
+    isLoading.value = true;
+    const nextPage = currentPage.value + 1;
+
+    try {
+      let newArticles = [];
+
+      if (isSearchMode.value) {
+        if (currentSearchKeyword.value) {
+          // 搜索模式
+          newArticles = await searchArticle(currentSearchKeyword.value, nextPage, 20);
+        }
+      } else {
+        // 分类模式
+        newArticles = await filterContent(currentCategory.value, nextPage, 20);
+      }
+
+      if (newArticles.length < 20) {
+        hasMoreData.value = false;
+      }
+
+      currentPage.value = nextPage;
+      return { success: true, hasMore: hasMoreData.value, articles: newArticles };
+    } catch (error) {
+      console.error("Error loading more articles:", error);
+      return { success: false, hasMore: false };
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // 重置分页状态
+  function resetPagination() {
+    currentPage.value = 1;
+    hasMoreData.value = true;
+    isLoading.value = false;
+    currentCategory.value = '';
+    currentSearchKeyword.value = '';
+    isSearchMode.value = false;
+  }
+
+  // 设置当前分类（用于虚拟滚动）
+  function setCurrentCategory(category) {
+    resetPagination();
+    currentCategory.value = category;
+    isSearchMode.value = false;
+  }
+
+  // 设置当前搜索关键词（用于虚拟滚动）
+  function setCurrentSearchKeyword(keyword) {
+    resetPagination();
+    currentSearchKeyword.value = keyword;
+    isSearchMode.value = true;
+  }
+
   // Function to delete an article
   async function deleteArticle(articleId) {
     try {
@@ -206,5 +274,16 @@ export const articleStore = defineStore('article', () => {
     deleteArticle,
     likeCountMap,
     starCountMap,
+    // 新增的分页相关状态和方法
+    currentPage,
+    hasMoreData,
+    isLoading,
+    currentCategory,
+    currentSearchKeyword,
+    isSearchMode,
+    loadMoreArticles,
+    resetPagination,
+    setCurrentCategory,
+    setCurrentSearchKeyword,
   };
 });

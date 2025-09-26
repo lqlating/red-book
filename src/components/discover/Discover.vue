@@ -22,8 +22,25 @@ const { isLogin, userThing } = storeToRefs(userStore);
 
 // 获取文章数据，使用storeToRefs确保响应性
 const articleStoreInstance = articleStore();
-const { articleLists, filteredArticles } = storeToRefs(articleStoreInstance);
-const { filterContent, filterContentExcludeAuthor, searchArticle: searchArticleAction, searchArticleExcludeAuthor } = articleStoreInstance;
+const { 
+  articleLists, 
+  filteredArticles, 
+  hasMoreData, 
+  isLoading: storeLoading,
+  currentCategory,
+  currentSearchKeyword,
+  isSearchMode
+} = storeToRefs(articleStoreInstance);
+const { 
+  filterContent, 
+  filterContentExcludeAuthor, 
+  searchArticle: searchArticleAction, 
+  searchArticleExcludeAuthor,
+  loadMoreArticles,
+  setCurrentCategory,
+  setCurrentSearchKeyword,
+  resetPagination
+} = articleStoreInstance;
 
 // 获取评论数据
 const commentStore = commentInfoStore();
@@ -38,6 +55,7 @@ const selectedArticle = ref(null);
 const imageLoaded = ref({});
 const isInitialLoad = ref(true); // 用于标记第一次加载
 const currentTitleValue = ref('Romance'); // 当前激活的标题值，用于强制重新渲染
+const mainBodyRef = ref(null);
 
 // 标题数据
 const titleStoreInstance = titleStore();
@@ -83,6 +101,29 @@ function handleImageLoad(articleId) {
   imageLoaded.value[articleId] = true;
 }
 
+// 滚动监听，实现懒加载
+const handleScroll = () => {
+  if (!mainBodyRef.value) return;
+  
+  const scrollBottom = mainBodyRef.value.scrollTop + mainBodyRef.value.clientHeight;
+  const scrollHeight = mainBodyRef.value.scrollHeight;
+  const threshold = scrollHeight - 200; // 距离底部200px时开始加载
+  
+  if (scrollBottom >= threshold && hasMoreData.value && !storeLoading.value) {
+    handleLoadMore();
+  }
+};
+
+// 懒加载更多数据
+const handleLoadMore = async () => {
+  const result = await loadMoreArticles();
+  if (result.success && result.articles) {
+    // 新文章已经添加到store中，无需额外处理
+    console.log(`加载了 ${result.articles.length} 篇新文章`);
+  }
+  return result;
+};
+
 // 文章选择处理
 function selectArticle(item) {
   if (!isLogin.value) {
@@ -114,10 +155,14 @@ const setActive = async (item, value) => {
   articleLists.value.length = 0;
   filteredArticles.value.length = 0;
 
+  // 重置分页状态
+  resetPagination();
+
   // 根据搜索状态确定行为
   if (isSearch.value) {
     if (value === 'Articles') {
       searchArticle.value = true;
+      setCurrentSearchKeyword(searchKeyword.value);
       if (userThing.value && userThing.value.id) {
         await searchArticleExcludeAuthor(searchKeyword.value, userThing.value.id);
       }
@@ -125,6 +170,8 @@ const setActive = async (item, value) => {
       searchArticle.value = false;
     }
   } else {
+    // 设置当前分类
+    setCurrentCategory(value);
     // 获取文章时排除当前用户的文章
     if (userThing.value && userThing.value.id) {
       await filterContentExcludeAuthor(value, userThing.value.id);
@@ -241,10 +288,10 @@ onMounted(async () => {
       </span>
     </div>
     <transition name="fade">
-      <div class="main-body">
-        <!-- 文章列表区域，不再使用searchArticle条件判断，而是根据displayArticles长度和激活的标题类型判断显示内容 -->
+      <div class="main-body" ref="mainBodyRef" @scroll="handleScroll">
+        <!-- 文章列表区域，使用原来的Waterfall但添加懒加载 -->
         <template v-if="(isSearch && searchArticle) || !isSearch">
-          <div v-if="displayArticles.length === 0" class="no-articles">
+          <div v-if="displayArticles.length === 0 && !storeLoading" class="no-articles">
             没有相应文章
           </div>
           <Waterfall v-else :list="displayArticles" :key="currentTitleValue" :breakpoints="breakpoints" :gutter="25">
@@ -260,6 +307,12 @@ onMounted(async () => {
               </div>
             </template>
           </Waterfall>
+          
+          <!-- 加载指示器 -->
+          <div v-if="storeLoading" class="loading-indicator">
+            <div class="spinner"></div>
+            <p>加载中...</p>
+          </div>
         </template>
 
         <!-- 如果搜索的是用户 -->
@@ -353,6 +406,31 @@ onMounted(async () => {
   padding: 0 10px;
   word-break: break-all;
   overflow: hidden;
+}
+
+/* 加载指示器样式 */
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #666;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .no-articles {
