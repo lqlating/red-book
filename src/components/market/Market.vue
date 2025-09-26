@@ -9,19 +9,13 @@
     </div>
 
     <!-- 书籍列表（瀑布流布局） -->
-    <div class="book-list-container">
-      <!-- 加载指示器 -->
-      <div v-if="isLoading" class="loading-indicator">
-        <div class="spinner"></div>
-        <p>加载中...</p>
-      </div>
-
+    <div class="book-list-container" ref="bookListContainerRef" @scroll="handleBookListScroll">
       <!-- 书籍列表 -->
       <transition-group name="fade-masonry" tag="div" class="book-list-masonry">
         <div v-for="book in bookLists" :key="book.book_id" class="book-item" @click="openBookDetail(book)">
           <!-- 书籍图片 -->
           <img v-if="book.book_img" :src="`data:image/jpeg;base64,${book.book_img}`" alt="book cover"
-            class="book-image" />
+            class="book-image" loading="lazy" />
           <div v-else class="book-image-placeholder">暂无图片</div>
 
           <!-- 书籍信息 -->
@@ -32,6 +26,17 @@
           </div>
         </div>
       </transition-group>
+      
+      <!-- 加载指示器 -->
+      <div v-if="isLoading || storeLoading" class="loading-indicator">
+        <div class="spinner"></div>
+        <p>加载中...</p>
+      </div>
+      
+      <!-- 没有更多数据提示 -->
+      <div v-if="!hasMoreData && bookLists.length > 0" class="no-more-data">
+        没有更多书籍了
+      </div>
     </div>
 
     <!-- 回顶部按钮 -->
@@ -95,15 +100,26 @@ const { titleList, fetchAllTitles } = titleData;
 
 // 使用 bookStore
 const bookData = bookStore();
-const { fetchBooksByType } = bookData;
-const { bookLists } = storeToRefs(bookData);
+const { 
+  fetchBooksByType, 
+  loadMoreBooks, 
+  setCurrentBookType, 
+  setCurrentSearchKeyword, 
+  resetPagination 
+} = bookData;
+const { 
+  bookLists, 
+  hasMoreData, 
+  isLoading: storeLoading 
+} = storeToRefs(bookData);
 
 // 使用 searchStore
 const searchStoreData = searchStore();
 const { isSearch, searchKeyword } = storeToRefs(searchStoreData);
 
-// 加载状态
+// 本地加载状态（用于兼容原有逻辑）
 const isLoading = ref(false);
+const bookListContainerRef = ref(null);
 
 // 设置激活的分类并获取书籍数据
 const setActive = async (item, value) => {
@@ -111,6 +127,12 @@ const setActive = async (item, value) => {
   titleList.forEach((title) => {
     title.isActive = title.title === item.title;
   });
+
+  // 重置分页状态
+  resetPagination();
+  
+  // 设置当前书籍类型
+  setCurrentBookType(value);
 
   // 显示加载指示器
   isLoading.value = true;
@@ -126,6 +148,28 @@ const setActive = async (item, value) => {
 const showBackToTop = ref(false);
 const handleScroll = () => {
   showBackToTop.value = window.scrollY > 300;
+};
+
+// 书籍列表滚动监听，实现懒加载
+const handleBookListScroll = () => {
+  if (!bookListContainerRef.value) return;
+  
+  const scrollBottom = bookListContainerRef.value.scrollTop + bookListContainerRef.value.clientHeight;
+  const scrollHeight = bookListContainerRef.value.scrollHeight;
+  const threshold = scrollHeight - 200; // 距离底部200px时开始加载
+  
+  if (scrollBottom >= threshold && hasMoreData.value && !storeLoading.value) {
+    handleLoadMoreBooks();
+  }
+};
+
+// 懒加载更多书籍
+const handleLoadMoreBooks = async () => {
+  const result = await loadMoreBooks();
+  if (result.success && result.books) {
+    console.log(`加载了 ${result.books.length} 本新书籍`);
+  }
+  return result;
 };
 
 // 回到顶部
@@ -159,6 +203,9 @@ watch(isSearch, async (newValue) => {
         setActive(defaultTitle, defaultTitle.value);
       }
     }
+  } else {
+    // 进入搜索模式，设置搜索关键词
+    setCurrentSearchKeyword(searchKeyword.value);
   }
 });
 </script>
@@ -422,5 +469,13 @@ watch(isSearch, async (newValue) => {
   margin-top: 10px;
   font-size: 14px;
   color: #666;
+}
+
+/* 没有更多数据提示 */
+.no-more-data {
+  text-align: center;
+  padding: 20px;
+  color: #888;
+  font-size: 14px;
 }
 </style>

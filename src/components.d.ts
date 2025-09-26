@@ -31,6 +31,7 @@ declare module 'vue' {
     Login: typeof import('./components/login/Login.vue')['default']
     MainBody: typeof import('./components/mainBody/MainBody.vue')['default']
     Market: typeof import('./components/market/Market.vue')['default']
+    MarketTest: typeof import('./components/market/MarketTest.vue')['default']
     Me: typeof import('./components/me/Me.vue')['default']
     MyHeader: typeof import('./components/MyHeader/MyHeader.vue')['default']
     NewSubscript: typeof import('./components/notify/newSubscript/newSubscript.vue')['default']
