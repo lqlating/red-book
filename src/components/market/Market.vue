@@ -1,5 +1,10 @@
 <template>
   <div class="market-wrapper">
+    <!-- 调试按钮 -->
+    <button class="debug-toggle" @click="showDebug = !showDebug">
+      {{ showDebug ? '隐藏调试' : '显示调试' }}
+    </button>
+    
     <!-- 导航栏 -->
     <div class="title" :class="{ 'invisible': isSearch }">
       <span v-for="item in titleList" :key="item.title" :class="{ 'title-inner': true, 'active': item.isActive }"
@@ -8,41 +13,54 @@
       </span>
     </div>
 
-    <!-- 书籍列表（瀑布流布局） -->
-    <div class="book-list-container" ref="bookListContainerRef" @scroll="handleBookListScroll">
-      <!-- 书籍列表 -->
-      <transition-group name="fade-masonry" tag="div" class="book-list-masonry">
-        <div v-for="book in bookLists" :key="book.book_id" class="book-item" @click="openBookDetail(book)">
-          <!-- 书籍图片 -->
-          <img v-if="book.book_img" :src="`data:image/jpeg;base64,${book.book_img}`" alt="book cover"
-            class="book-image" loading="lazy" />
-          <div v-else class="book-image-placeholder">暂无图片</div>
+    <!-- 虚拟滚动网格布局 -->
+    <div class="book-list-container">
+      <VirtualGrid
+        :items="bookLists"
+        :column-count="getColumnCount()"
+        :gap="20"
+        :item-height="500"
+        :buffer="5"
+        :is-loading="isLoading || storeLoading"
+        :has-more="hasMoreData"
+        @load-more="handleLoadMoreBooks"
+        @scroll="handleVirtualScroll"
+        ref="virtualGridRef"
+      >
+        <template #default="{ item: book, index }">
+          <div class="book-item" @click="openBookDetail(book)">
+            <!-- 书籍图片 -->
+            <img v-if="book.book_img" :src="`data:image/jpeg;base64,${book.book_img}`" alt="book cover"
+              class="book-image" loading="lazy" />
+            <div v-else class="book-image-placeholder">暂无图片</div>
 
-          <!-- 书籍信息 -->
-          <div class="book-info">
-            <h3 class="book-title">{{ book.book_title }}</h3>
-            <p class="book-author">{{ book.book_writer }}</p>
-            <p class="book-price">￥{{ book.book_price }}</p>
+            <!-- 书籍信息 -->
+            <div class="book-info">
+              <h3 class="book-title">{{ book.book_title }}</h3>
+              <p class="book-author">{{ book.book_writer }}</p>
+              <p class="book-price">￥{{ book.book_price }}</p>
+            </div>
           </div>
-        </div>
-      </transition-group>
-      
-      <!-- 加载指示器 -->
-      <div v-if="isLoading || storeLoading" class="loading-indicator">
-        <div class="spinner"></div>
-        <p>加载中...</p>
-      </div>
-      
-      <!-- 没有更多数据提示 -->
-      <div v-if="!hasMoreData && bookLists.length > 0" class="no-more-data">
-        没有更多书籍了
-      </div>
+        </template>
+      </VirtualGrid>
     </div>
 
     <!-- 回顶部按钮 -->
-    <button class="back-to-top" v-show="showBackToTop" @click="scrollToTop">
-      <span class="arrow">▲</span>
-    </button>
+    <transition name="back-to-top">
+      <button 
+        class="back-to-top" 
+        v-show="showBackToTop" 
+        @click="scrollToTop"
+        :class="{ 'pulse': isScrolling }"
+      >
+        <div class="back-to-top-content">
+          <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 19V5M5 12L12 5L19 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="back-to-top-ripple"></div>
+      </button>
+    </transition>
 
     <!-- 书籍详情页面 -->
     <transition name="fade">
@@ -50,6 +68,26 @@
         <book-detail :book="selectedBook" @close="closeBookDetail" />
       </div>
     </transition>
+    
+    <!-- 虚拟滚动调试组件 -->
+    <VirtualScrollDebug
+      :total-items="bookLists.length"
+      :column-count="getColumnCount()"
+      :item-height="500"
+      :gap="20"
+      :buffer="5"
+      :scroll-top="scrollData.scrollTop"
+      :container-height="scrollData.containerHeight"
+      :scroll-height="scrollData.scrollHeight"
+      :visible-row-start="visibleRowStart"
+      :visible-row-end="visibleRowEnd"
+      :visible-items-count="visibleItemsCount"
+      :offset-y="offsetY"
+      :is-loading="isLoading || storeLoading"
+      :has-more="hasMoreData"
+      :show-debug="showDebug"
+      @toggle-debug="showDebug = false"
+    />
   </div>
 </template>
 
@@ -57,6 +95,8 @@
 import { ref, onMounted, onUnmounted, watch } from "vue";
 import { storeToRefs } from "pinia";
 import BookDetail from "./book_detail/book_detail.vue";
+import VirtualGrid from "./VirtualGrid.vue";
+import VirtualScrollDebug from "./VirtualScrollDebug.vue";
 import { titleStore } from "../../store/title";
 import { bookStore } from "../../store/books";
 import { searchStore } from "../../store/search";
@@ -119,7 +159,21 @@ const { isSearch, searchKeyword } = storeToRefs(searchStoreData);
 
 // 本地加载状态（用于兼容原有逻辑）
 const isLoading = ref(false);
-const bookListContainerRef = ref(null);
+const virtualGridRef = ref(null);
+
+// 调试相关
+const showDebug = ref(false);
+const scrollData = ref({
+  scrollTop: 0,
+  containerHeight: 0,
+  scrollHeight: 0
+});
+
+// 虚拟滚动计算参数
+const visibleRowStart = ref(0);
+const visibleRowEnd = ref(0);
+const visibleItemsCount = ref(0);
+const offsetY = ref(0);
 
 // 设置激活的分类并获取书籍数据
 const setActive = async (item, value) => {
@@ -146,20 +200,76 @@ const setActive = async (item, value) => {
 
 // 监听滚动控制回到顶部按钮的显示
 const showBackToTop = ref(false);
+const isScrolling = ref(false);
+let scrollTimer = null;
+
 const handleScroll = () => {
   showBackToTop.value = window.scrollY > 300;
+  
+  // 滚动时的脉冲效果
+  isScrolling.value = true;
+  clearTimeout(scrollTimer);
+  scrollTimer = setTimeout(() => {
+    isScrolling.value = false;
+  }, 150);
 };
 
-// 书籍列表滚动监听，实现懒加载
-const handleBookListScroll = () => {
-  if (!bookListContainerRef.value) return;
+// 获取响应式列数
+const getColumnCount = () => {
+  const width = window.innerWidth;
+  if (width >= 1200) return 4;
+  if (width >= 800) return 3;
+  if (width >= 500) return 2;
+  return 1;
+};
+
+// 虚拟滚动处理
+const handleVirtualScroll = (scrollInfo) => {
+  // 更新滚动数据
+  scrollData.value = {
+    scrollTop: scrollInfo.scrollTop,
+    containerHeight: scrollInfo.clientHeight,
+    scrollHeight: scrollInfo.scrollHeight
+  };
   
-  const scrollBottom = bookListContainerRef.value.scrollTop + bookListContainerRef.value.clientHeight;
-  const scrollHeight = bookListContainerRef.value.scrollHeight;
-  const threshold = scrollHeight - 200; // 距离底部200px时开始加载
+  // 计算可见范围
+  const columnCount = getColumnCount();
+  const itemHeight = 500;
+  const gap = 20;
+  const buffer = 5;
+  const rowHeight = itemHeight + gap;
   
-  if (scrollBottom >= threshold && hasMoreData.value && !storeLoading.value) {
-    handleLoadMoreBooks();
+  const start = Math.max(0, Math.floor(scrollInfo.scrollTop / rowHeight) - buffer);
+  const end = Math.min(
+    Math.ceil(bookLists.value.length / columnCount) - 1,
+    Math.ceil((scrollInfo.scrollTop + scrollInfo.clientHeight) / rowHeight) + buffer
+  );
+  
+  visibleRowStart.value = start;
+  visibleRowEnd.value = end;
+  visibleItemsCount.value = Math.min((end - start + 1) * columnCount, bookLists.value.length);
+  offsetY.value = start * rowHeight;
+  
+  // 更新回顶部按钮显示状态
+  showBackToTop.value = scrollInfo.scrollTop > 300;
+  
+  // 滚动时的脉冲效果
+  isScrolling.value = true;
+  clearTimeout(scrollTimer);
+  scrollTimer = setTimeout(() => {
+    isScrolling.value = false;
+  }, 150);
+  
+  // 防止滑到底部后继续滑动
+  if (!hasMoreData.value && scrollInfo.scrollTop + scrollInfo.clientHeight >= scrollInfo.scrollHeight - 10) {
+    // 如果已经到底部且没有更多数据，阻止继续滚动
+    if (virtualGridRef.value && virtualGridRef.value.containerRef) {
+      const container = virtualGridRef.value.containerRef
+      const maxScrollTop = scrollInfo.scrollHeight - scrollInfo.clientHeight
+      if (container.scrollTop > maxScrollTop) {
+        container.scrollTop = maxScrollTop
+      }
+    }
   }
 };
 
@@ -174,7 +284,11 @@ const handleLoadMoreBooks = async () => {
 
 // 回到顶部
 const scrollToTop = () => {
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (virtualGridRef.value) {
+    virtualGridRef.value.scrollToTop();
+  } else {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 };
 
 // 绑定和解绑滚动监听
@@ -250,67 +364,22 @@ watch(isSearch, async (newValue) => {
 
 /* 书籍列表容器 */
 .book-list-container {
-  max-height: calc(100vh - 170px);
+  height: calc(100vh - 170px);
   /* 改为视口高度减去顶部导航和边距的高度 */
-  overflow-y: auto;
   position: relative;
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 90%, rgba(0, 0, 0, 0));
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 90%, rgba(0, 0, 0, 0));
-}
-
-/* 隐藏滚动条 */
-.book-list-container::-webkit-scrollbar {
-  width: 0;
-  display: none;
-}
-
-/* 瀑布流布局 */
-.book-list-masonry {
-  column-gap: 20px;
-  padding: 20px 20px 40px 20px;
-  /* 增加底部padding，避免最后一行被渐变遮住 */
-}
-
-/* 大屏幕：4 列 */
-@media (min-width: 1200px) {
-  .book-list-masonry {
-    column-count: 4;
-  }
-}
-
-/* 中等屏幕：3 列 */
-@media (min-width: 800px) and (max-width: 1199px) {
-  .book-list-masonry {
-    column-count: 3;
-  }
-}
-
-/* 小屏幕：2 列 */
-@media (min-width: 500px) and (max-width: 799px) {
-  .book-list-masonry {
-    column-count: 2;
-  }
-}
-
-/* 超小屏幕：1 列 */
-@media (max-width: 499px) {
-  .book-list-masonry {
-    column-count: 1;
-  }
 }
 
 /* 书籍项样式 */
 .book-item {
-  break-inside: avoid;
-  /* 防止内容被分割 */
   background: #fff;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease;
   cursor: pointer;
-  margin-bottom: 20px;
-  /* 书籍项之间的间距 */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .book-item:hover {
@@ -320,13 +389,14 @@ watch(isSearch, async (newValue) => {
 /* 书籍图片 */
 .book-image {
   width: 100%;
-  height: auto;
+  height: 380px;
+  object-fit: cover;
   display: block;
 }
 
 .book-image-placeholder {
   width: 100%;
-  height: 200px;
+  height: 380px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -338,18 +408,31 @@ watch(isSearch, async (newValue) => {
 /* 书籍信息 */
 .book-info {
   padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .book-title {
   font-size: 16px;
   font-weight: bold;
   margin: 0 0 8px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .book-author {
   font-size: 14px;
   color: #666;
   margin: 0 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .book-price {
@@ -357,42 +440,109 @@ watch(isSearch, async (newValue) => {
   color: #e74c3c;
   font-weight: bold;
   margin: 0;
+  margin-top: auto;
 }
 
 /* 回到顶部按钮 */
 .back-to-top {
   position: fixed;
-  bottom: 40px;
-  right: 20px;
-  width: 50px;
-  height: 50px;
-  background: rgba(128, 128, 128, 0.7);
-  /* 半透明灰色 */
+  bottom: 30px;
+  right: 30px;
+  width: 45px;
+  height: 45px;
+  background: rgba(102, 126, 234, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: #fff;
-  font-size: 20px;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  transition: opacity 0.3s, transform 0.3s;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  z-index: 1000;
 }
 
 .back-to-top:hover {
-  background: rgba(128, 128, 128, 0.9);
-  /* 悬停时加深颜色 */
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  background: rgba(102, 126, 234, 0.8);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .back-to-top:active {
-  transform: scale(0.9);
+  transform: translateY(-1px) scale(0.98);
 }
 
-.arrow {
-  font-size: 24px;
-  transform: translateY(-2px);
-  /* 调整箭头位置 */
+.back-to-top.pulse {
+  animation: pulse 0.6s ease-in-out;
+}
+
+.back-to-top-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+
+.arrow-icon {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.3s ease;
+}
+
+.back-to-top:hover .arrow-icon {
+  transform: translateY(-1px);
+}
+
+.back-to-top-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.back-to-top:active .back-to-top-ripple {
+  width: 100px;
+  height: 100px;
+}
+
+/* 回顶部按钮进入/离开动画 */
+.back-to-top-enter-active,
+.back-to-top-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.back-to-top-enter-from {
+  opacity: 0;
+  transform: translateY(20px) scale(0.8);
+}
+
+.back-to-top-leave-to {
+  opacity: 0;
+  transform: translateY(20px) scale(0.8);
+}
+
+/* 脉冲动画 */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* 遮罩层 */
@@ -420,62 +570,24 @@ watch(isSearch, async (newValue) => {
   opacity: 0;
 }
 
-/* 书籍列表过渡效果 */
-.fade-masonry-enter-active,
-.fade-masonry-leave-active {
-  transition: opacity 0.5s ease, transform 0.5s ease;
+/* 调试按钮样式 */
+.debug-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: #2196F3;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s;
 }
 
-.fade-masonry-enter-from,
-.fade-masonry-leave-to {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.fade-masonry-leave-active {
-  position: absolute;
-  /* 确保离开的元素不会影响布局 */
-}
-
-/* 加载指示器样式 */
-.loading-indicator {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.loading-indicator p {
-  margin-top: 10px;
-  font-size: 14px;
-  color: #666;
-}
-
-/* 没有更多数据提示 */
-.no-more-data {
-  text-align: center;
-  padding: 20px;
-  color: #888;
-  font-size: 14px;
+.debug-toggle:hover {
+  background: #1976D2;
 }
 </style>

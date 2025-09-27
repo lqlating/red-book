@@ -193,7 +193,12 @@ export const articleStore = defineStore('article', () => {
           newArticles = await searchArticle(currentSearchKeyword.value, nextPage, 20);
         }
       } else {
-        // 分类模式
+        // 分类模式 - 确保有分类值
+        if (!currentCategory.value) {
+          console.warn('currentCategory is empty, cannot load more articles');
+          isLoading.value = false;
+          return { success: false, hasMore: false };
+        }
         newArticles = await filterContent(currentCategory.value, nextPage, 20);
       }
 
