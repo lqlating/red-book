@@ -7,7 +7,6 @@ import { LazyImg, Waterfall } from 'vue-waterfall-plugin-next';
 import 'vue-waterfall-plugin-next/dist/style.css';
 import ArticleInner from '../subArticle/article_inner.vue';
 import Like_button from '../subArticle/like_button.vue';
-import LazyLoadDebug from './LazyLoadDebug.vue';
 import { storeToRefs } from 'pinia';
 import UserList from './UserList.vue';
 import { titleStore } from '../../store/title';
@@ -23,8 +22,25 @@ const { isLogin, userThing } = storeToRefs(userStore);
 
 // 获取文章数据，使用storeToRefs确保响应性
 const articleStoreInstance = articleStore();
-const { articleLists, filteredArticles, hasMoreData, isLoading: storeLoading } = storeToRefs(articleStoreInstance);
-const { filterContent, filterContentExcludeAuthor, searchArticle: searchArticleAction, searchArticleExcludeAuthor, loadMoreArticles, setCurrentCategory } = articleStoreInstance;
+const { 
+  articleLists, 
+  filteredArticles, 
+  hasMoreData, 
+  isLoading: storeLoading,
+  currentCategory,
+  currentSearchKeyword,
+  isSearchMode
+} = storeToRefs(articleStoreInstance);
+const { 
+  filterContent, 
+  filterContentExcludeAuthor, 
+  searchArticle: searchArticleAction, 
+  searchArticleExcludeAuthor,
+  loadMoreArticles,
+  setCurrentCategory,
+  setCurrentSearchKeyword,
+  resetPagination
+} = articleStoreInstance;
 
 // 获取评论数据
 const commentStore = commentInfoStore();
@@ -40,21 +56,6 @@ const imageLoaded = ref({});
 const isInitialLoad = ref(true); // 用于标记第一次加载
 const currentTitleValue = ref('Romance'); // 当前激活的标题值，用于强制重新渲染
 const mainBodyRef = ref(null);
-
-// 调试状态
-const showDebug = ref(false);
-const debugStats = ref({
-  totalArticles: 0,
-  loadedImages: 0,
-  loadingImages: 0,
-  pendingImages: 0,
-  networkRequests: 0,
-  totalLoadTime: 0,
-  scrollTop: 0,
-  containerHeight: 0,
-  scrollHeight: 0,
-  recentActivities: []
-});
 
 // 标题数据
 const titleStoreInstance = titleStore();
@@ -93,67 +94,25 @@ const displayArticles = computed(() => {
 // 监听文章数据变化，只打印文章列表
 watch(displayArticles, (newArticles) => {
   console.log(`文章列表 (${newArticles.length}篇):`, newArticles);
-  
-  // 更新调试统计
-  debugStats.value.totalArticles = newArticles.length;
-  debugStats.value.pendingImages = newArticles.length - debugStats.value.loadedImages;
-  
-  // 添加活动记录
-  addActivity('数据更新', `文章数量: ${newArticles.length}`);
 }, { immediate: true });
 
 // 处理图片加载
 function handleImageLoad(articleId) {
   imageLoaded.value[articleId] = true;
-  
-  // 更新调试统计
-  debugStats.value.loadedImages++;
-  debugStats.value.pendingImages = Math.max(0, debugStats.value.pendingImages - 1);
-  debugStats.value.networkRequests++;
-  
-  // 添加活动记录
-  addActivity('load', `图片加载: ${articleId}`);
 }
 
-// 滚动监听，实现触底懒加载
+// 滚动监听，实现懒加载
 const handleScroll = () => {
   if (!mainBodyRef.value) return;
   
-  const scrollTop = mainBodyRef.value.scrollTop;
-  const clientHeight = mainBodyRef.value.clientHeight;
+  const scrollBottom = mainBodyRef.value.scrollTop + mainBodyRef.value.clientHeight;
   const scrollHeight = mainBodyRef.value.scrollHeight;
-  
-  // 更新调试统计
-  debugStats.value.scrollTop = scrollTop;
-  debugStats.value.containerHeight = clientHeight;
-  debugStats.value.scrollHeight = scrollHeight;
-  
-  const scrollBottom = scrollTop + clientHeight;
   const threshold = scrollHeight - 200; // 距离底部200px时开始加载
   
   if (scrollBottom >= threshold && hasMoreData.value && !storeLoading.value) {
-    console.log('触发触底加载');
-    addActivity('scroll', '触底加载触发');
     handleLoadMore();
   }
 };
-
-// 添加活动记录
-function addActivity(type, text) {
-  const now = new Date();
-  const time = now.toLocaleTimeString();
-  
-  debugStats.value.recentActivities.unshift({
-    type,
-    text,
-    time
-  });
-  
-  // 保持最近活动列表不超过20条
-  if (debugStats.value.recentActivities.length > 20) {
-    debugStats.value.recentActivities = debugStats.value.recentActivities.slice(0, 20);
-  }
-}
 
 // 懒加载更多数据
 const handleLoadMore = async () => {
@@ -161,7 +120,6 @@ const handleLoadMore = async () => {
   if (result.success && result.articles) {
     // 新文章已经添加到store中，无需额外处理
     console.log(`加载了 ${result.articles.length} 篇新文章`);
-    addActivity('load', `加载了 ${result.articles.length} 篇新文章`);
   }
   return result;
 };
@@ -197,10 +155,14 @@ const setActive = async (item, value) => {
   articleLists.value.length = 0;
   filteredArticles.value.length = 0;
 
+  // 重置分页状态
+  resetPagination();
+
   // 根据搜索状态确定行为
   if (isSearch.value) {
     if (value === 'Articles') {
       searchArticle.value = true;
+      setCurrentSearchKeyword(searchKeyword.value);
       if (userThing.value && userThing.value.id) {
         await searchArticleExcludeAuthor(searchKeyword.value, userThing.value.id);
       }
@@ -208,9 +170,8 @@ const setActive = async (item, value) => {
       searchArticle.value = false;
     }
   } else {
-    // 设置当前分类（用于触底加载）
+    // 设置当前分类
     setCurrentCategory(value);
-    
     // 获取文章时排除当前用户的文章
     if (userThing.value && userThing.value.id) {
       await filterContentExcludeAuthor(value, userThing.value.id);
@@ -322,7 +283,7 @@ onMounted(async () => {
   }
 });
 
-// 组件卸载时清理事件监听
+// 组件卸载时移除滚动监听
 onUnmounted(() => {
   if (mainBodyRef.value) {
     mainBodyRef.value.removeEventListener('scroll', handleScroll);
@@ -332,11 +293,6 @@ onUnmounted(() => {
 
 <template>
   <div class="Discover-wrapper">
-    <!-- 调试按钮 -->
-    <button class="debug-toggle" @click="showDebug = !showDebug">
-      {{ showDebug ? '隐藏调试' : '显示调试' }}
-    </button>
-    
     <div class="title">
       <span v-for="item in (isSearch ? newTitleList : titleList)" :key="item.title"
         :class="{ 'title-inner': true, 'active': item.isActive }" @click="setActive(item, item.value)">
@@ -344,7 +300,7 @@ onUnmounted(() => {
       </span>
     </div>
     <transition name="fade">
-      <div class="main-body" ref="mainBodyRef">
+      <div class="main-body" ref="mainBodyRef" @scroll="handleScroll">
         <!-- 文章列表区域，不再使用searchArticle条件判断，而是根据displayArticles长度和激活的标题类型判断显示内容 -->
         <template v-if="(isSearch && searchArticle) || !isSearch">
           <div v-if="displayArticles.length === 0 && !storeLoading" class="no-articles">
@@ -377,24 +333,6 @@ onUnmounted(() => {
     </transition>
     <ArticleInner v-if="selectedArticle" :article="selectedArticle" :article_inner="true" :close="closeArticleInner"
       :current-user-id="userThing.id" />
-    
-    <!-- 懒加载调试面板 -->
-    <LazyLoadDebug
-      :total-articles="debugStats.totalArticles"
-      :loaded-images="debugStats.loadedImages"
-      :loading-images="debugStats.loadingImages"
-      :pending-images="debugStats.pendingImages"
-      :network-requests="debugStats.networkRequests"
-      :total-load-time="debugStats.totalLoadTime"
-      :scroll-top="debugStats.scrollTop"
-      :container-height="debugStats.containerHeight"
-      :scroll-height="debugStats.scrollHeight"
-      :is-loading="storeLoading"
-      :has-more="hasMoreData"
-      :recent-activities="debugStats.recentActivities"
-      :show-debug="showDebug"
-      @toggle-debug="showDebug = false"
-    />
   </div>
 </template>
 
@@ -482,14 +420,6 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.no-articles {
-  margin: 200px;
-  text-align: center;
-  color: #888;
-  font-size: 16px;
-  padding: 20px;
-}
-
 /* 加载指示器样式 */
 .loading-indicator {
   display: flex;
@@ -515,24 +445,11 @@ onUnmounted(() => {
   100% { transform: rotate(360deg); }
 }
 
-/* 调试按钮样式 */
-.debug-toggle {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1000;
-  background: #FF9800;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.3s;
-}
-
-.debug-toggle:hover {
-  background: #F57C00;
+.no-articles {
+  margin: 200px;
+  text-align: center;
+  color: #888;
+  font-size: 16px;
+  padding: 20px;
 }
 </style>

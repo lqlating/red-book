@@ -8,7 +8,7 @@ import StarList from "../components/me/meInfo/StarList.vue";
 import Book from "../components/me/meInfo/Book.vue";
 import Publish from '../components/publish/Publish.vue';
 import Market from '../components/market/Market.vue';
-import Cart from '../components/cart/Cart.vue';
+import Cart from '../components/cart/cart.vue';
 
 const router = createRouter({
     history: createWebHistory(),
