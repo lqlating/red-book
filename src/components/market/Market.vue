@@ -5,6 +5,26 @@
       {{ showDebug ? '隐藏调试' : '显示调试' }}
     </button>
     
+    <!-- 调试信息面板 -->
+    <div v-if="showDebug" class="debug-panel">
+      <h3>调试信息</h3>
+      <div class="debug-section">
+        <h4>缓存状态</h4>
+        <div v-for="category in cacheStats.categories" :key="category.categoryType" class="cache-item">
+          <strong>{{ category.categoryType }}:</strong>
+          <span>数据量: {{ category.dataCount }}, 页码: {{ category.currentPage }}, 有更多: {{ category.hasMore ? '是' : '否' }}</span>
+        </div>
+        <button @click="clearAllCache" class="clear-cache-btn">清除所有缓存</button>
+      </div>
+      <div class="debug-section">
+        <h4>当前状态</h4>
+        <p>当前分类: {{ currentBookType }}</p>
+        <p>当前页码: {{ currentPage }}</p>
+        <p>有更多数据: {{ hasMoreData ? '是' : '否' }}</p>
+        <p>书籍数量: {{ bookLists.length }}</p>
+      </div>
+    </div>
+    
     <!-- 导航栏 -->
     <div class="title" :class="{ 'invisible': isSearch }">
       <span v-for="item in titleList" :key="item.title" :class="{ 'title-inner': true, 'active': item.isActive }"
@@ -145,7 +165,9 @@ const {
   loadMoreBooks, 
   setCurrentBookType, 
   setCurrentSearchKeyword, 
-  resetPagination 
+  resetPagination,
+  hasCategoryCache,
+  getCacheStats
 } = bookData;
 const { 
   bookLists, 
@@ -169,6 +191,21 @@ const scrollData = ref({
   scrollHeight: 0
 });
 
+// 缓存统计信息
+const cacheStats = ref({ categories: [] });
+
+// 更新缓存统计信息
+const updateCacheStats = () => {
+  cacheStats.value = getCacheStats();
+};
+
+// 清除所有缓存
+const clearAllCache = () => {
+  bookData.clearAllCache();
+  updateCacheStats();
+  console.log('已清除所有缓存');
+};
+
 // 虚拟滚动计算参数
 const visibleRowStart = ref(0);
 const visibleRowEnd = ref(0);
@@ -182,11 +219,16 @@ const setActive = async (item, value) => {
     title.isActive = title.title === item.title;
   });
 
-  // 重置分页状态
-  resetPagination();
-  
-  // 设置当前书籍类型
+  // 设置当前书籍类型（内部会处理分页状态重置）
   setCurrentBookType(value);
+
+  // 检查是否有缓存数据
+  if (hasCategoryCache(value)) {
+    console.log(`分类 ${value} 有缓存数据，直接使用`);
+    // 缓存数据已经在fetchBooksByType中处理，这里不需要额外操作
+    updateCacheStats();
+    return;
+  }
 
   // 显示加载指示器
   isLoading.value = true;
@@ -196,6 +238,9 @@ const setActive = async (item, value) => {
 
   // 隐藏加载指示器
   isLoading.value = false;
+  
+  // 更新缓存统计信息
+  updateCacheStats();
 };
 
 // 监听滚动控制回到顶部按钮的显示
@@ -299,6 +344,9 @@ onMounted(async () => {
     await setActive(titleList[0], titleList[0].value);
   }
   console.log(bookLists.value);
+  
+  // 初始化缓存统计信息
+  updateCacheStats();
 
   window.addEventListener("scroll", handleScroll);
 });
@@ -367,6 +415,71 @@ watch(isSearch, async (newValue) => {
   height: calc(100vh - 170px);
   /* 改为视口高度减去顶部导航和边距的高度 */
   position: relative;
+}
+
+/* 调试面板样式 */
+.debug-toggle {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.debug-panel {
+  position: fixed;
+  top: 50px;
+  right: 10px;
+  z-index: 1000;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  max-width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.debug-section {
+  margin-bottom: 16px;
+}
+
+.debug-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.cache-item {
+  margin-bottom: 4px;
+  font-size: 12px;
+  padding: 4px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.clear-cache-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.debug-section p {
+  margin: 4px 0;
+  font-size: 12px;
+  color: #666;
 }
 
 /* 书籍项样式 */

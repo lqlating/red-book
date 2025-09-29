@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import articleApi from '../api/articleApi';
+import { articleCacheStore } from './articleCache';
 export const articleStore = defineStore('article', () => {
   // 使用ref替代reactive来保持响应性
   const articleLists = ref([]);
@@ -15,10 +16,30 @@ export const articleStore = defineStore('article', () => {
   const currentCategory = ref('');
   const currentSearchKeyword = ref('');
   const isSearchMode = ref(false);
+  
+  // 缓存store实例
+  const cache = articleCacheStore();
 
   // Fetch articles by category
   async function filterContent(value, page = 1, size = 20) {
     try {
+      // 如果是第一页，检查缓存
+      if (page === 1 && cache.hasCategoryCache(value)) {
+        console.log(`使用缓存数据 for ${value}`);
+        const cachedArticles = cache.getCachedArticles(value);
+        articleLists.value = [...cachedArticles];
+        currentPage.value = cache.getCategoryCache(value).currentPage;
+        hasMoreData.value = cache.getCategoryCache(value).hasMore;
+        
+        // 更新点赞和收藏计数
+        cachedArticles.forEach((article) => {
+          likeCountMap.value[article.article_id] = article.like_count;
+          starCountMap.value[article.article_id] = article.star_count;
+        });
+        
+        return cachedArticles;
+      }
+
       const res = await articleApi.Filtercontent(value, page, size);
 
       // 判断返回的数据格式，API返回的数据结构为 {code, msg, data}
@@ -29,9 +50,11 @@ export const articleStore = defineStore('article', () => {
         newArticles = res.data;
       }
 
-      // 如果是第一页，清空列表
+      // 如果是第一页，清空列表并缓存数据
       if (page === 1) {
         articleLists.value.length = 0;
+        // 缓存前40条数据
+        cache.setCategoryCache(value, newArticles, newArticles.length >= size, page);
       }
 
       // 添加新文章
@@ -53,6 +76,23 @@ export const articleStore = defineStore('article', () => {
   // 根据类型过滤文章并排除特定作者
   async function filterContentExcludeAuthor(type, authorId, page = 1, size = 20) {
     try {
+      // 如果是第一页，检查缓存
+      if (page === 1 && cache.hasCategoryCache(type)) {
+        console.log(`使用缓存数据 for ${type} (排除作者)`);
+        const cachedArticles = cache.getCachedArticles(type);
+        filteredArticles.value = [...cachedArticles];
+        currentPage.value = cache.getCategoryCache(type).currentPage;
+        hasMoreData.value = cache.getCategoryCache(type).hasMore;
+        
+        // 更新点赞和收藏计数
+        cachedArticles.forEach((article) => {
+          likeCountMap.value[article.article_id] = article.like_count;
+          starCountMap.value[article.article_id] = article.star_count;
+        });
+        
+        return cachedArticles;
+      }
+
       const res = await articleApi.FiltercontentExcludeAuthor(type, authorId, page, size);
 
       // 判断返回的数据格式，API返回的数据结构为 {code, msg, data}
@@ -63,9 +103,11 @@ export const articleStore = defineStore('article', () => {
         newArticles = res.data;
       }
 
-      // 如果是第一页，清空列表
+      // 如果是第一页，清空列表并缓存数据
       if (page === 1) {
         filteredArticles.value.length = 0;
+        // 缓存前40条数据
+        cache.setCategoryCache(type, newArticles, newArticles.length >= size, page);
       }
 
       // 添加新文章
@@ -87,6 +129,23 @@ export const articleStore = defineStore('article', () => {
   // 根据关键词搜索文章
   async function searchArticle(keyword, page = 1, size = 20) {
     try {
+      // 如果是第一页，检查搜索缓存
+      if (page === 1 && cache.hasSearchCache(keyword)) {
+        console.log(`使用搜索缓存数据 for ${keyword}`);
+        const cachedArticles = cache.getSearchCache(keyword);
+        filteredArticles.value = [...cachedArticles];
+        currentPage.value = cache.searchCache.value.get(keyword).currentPage;
+        hasMoreData.value = cache.searchCache.value.get(keyword).hasMore;
+        
+        // 更新点赞和收藏计数
+        cachedArticles.forEach((article) => {
+          likeCountMap.value[article.article_id] = article.like_count;
+          starCountMap.value[article.article_id] = article.star_count;
+        });
+        
+        return cachedArticles;
+      }
+
       const res = await articleApi.searchArticle(keyword, page, size);
 
       // 判断返回的数据格式，API返回的数据结构为 {code, msg, data}
@@ -97,9 +156,11 @@ export const articleStore = defineStore('article', () => {
         newArticles = res.data;
       }
 
-      // 如果是第一页，清空列表
+      // 如果是第一页，清空列表并缓存数据
       if (page === 1) {
         filteredArticles.value.length = 0;
+        // 缓存前40条数据
+        cache.setSearchCache(keyword, newArticles, newArticles.length >= size, page);
       }
 
       // 添加新文章
@@ -121,6 +182,23 @@ export const articleStore = defineStore('article', () => {
   // 根据关键词搜索文章并排除特定作者
   async function searchArticleExcludeAuthor(keyword, authorId, page = 1, size = 20) {
     try {
+      // 如果是第一页，检查搜索缓存
+      if (page === 1 && cache.hasSearchCache(keyword)) {
+        console.log(`使用搜索缓存数据 for ${keyword} (排除作者)`);
+        const cachedArticles = cache.getSearchCache(keyword);
+        filteredArticles.value = [...cachedArticles];
+        currentPage.value = cache.searchCache.value.get(keyword).currentPage;
+        hasMoreData.value = cache.searchCache.value.get(keyword).hasMore;
+        
+        // 更新点赞和收藏计数
+        cachedArticles.forEach((article) => {
+          likeCountMap.value[article.article_id] = article.like_count;
+          starCountMap.value[article.article_id] = article.star_count;
+        });
+        
+        return cachedArticles;
+      }
+
       const res = await articleApi.searchArticleExcludeAuthor(keyword, authorId, page, size);
 
       // 判断返回的数据格式，API返回的数据结构为 {code, msg, data}
@@ -131,9 +209,11 @@ export const articleStore = defineStore('article', () => {
         newArticles = res.data;
       }
 
-      // 如果是第一页，清空列表
+      // 如果是第一页，清空列表并缓存数据
       if (page === 1) {
         filteredArticles.value.length = 0;
+        // 缓存前40条数据
+        cache.setSearchCache(keyword, newArticles, newArticles.length >= size, page);
       }
 
       // 添加新文章
@@ -191,6 +271,12 @@ export const articleStore = defineStore('article', () => {
         if (currentSearchKeyword.value) {
           // 搜索模式
           newArticles = await searchArticle(currentSearchKeyword.value, nextPage, 20);
+          // 更新搜索缓存的hasMore状态
+          if (newArticles.length < 20) {
+            cache.updateSearchCacheHasMore(currentSearchKeyword.value, false);
+          }
+          // 更新搜索缓存的当前页码
+          cache.updateSearchCacheCurrentPage(currentSearchKeyword.value, nextPage);
         }
       } else {
         // 分类模式 - 确保有分类值
@@ -200,6 +286,12 @@ export const articleStore = defineStore('article', () => {
           return { success: false, hasMore: false };
         }
         newArticles = await filterContent(currentCategory.value, nextPage, 20);
+        // 更新分类缓存的hasMore状态
+        if (newArticles.length < 20) {
+          cache.updateCacheHasMore(currentCategory.value, false);
+        }
+        // 更新分类缓存的当前页码
+        cache.updateCacheCurrentPage(currentCategory.value, nextPage);
       }
 
       if (newArticles.length < 20) {
@@ -228,7 +320,10 @@ export const articleStore = defineStore('article', () => {
 
   // 设置当前分类（用于虚拟滚动）
   function setCurrentCategory(category) {
-    resetPagination();
+    // 如果切换到不同的分类，重置分页状态
+    if (currentCategory.value !== category) {
+      resetPagination();
+    }
     currentCategory.value = category;
     isSearchMode.value = false;
   }
@@ -290,5 +385,13 @@ export const articleStore = defineStore('article', () => {
     resetPagination,
     setCurrentCategory,
     setCurrentSearchKeyword,
+    // 缓存相关方法
+    clearCategoryCache: cache.clearCategoryCache,
+    clearAllCache: cache.clearAllCache,
+    getCacheStats: cache.getCacheStats,
+    hasCategoryCache: cache.hasCategoryCache,
+    hasSearchCache: cache.hasSearchCache,
+    clearSearchCache: cache.clearSearchCache,
+    clearAllSearchCache: cache.clearAllSearchCache,
   };
 });

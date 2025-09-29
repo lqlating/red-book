@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import bookApi from '../api/bookApi';
+import { cacheStore } from './cache';
 
 export const bookStore = defineStore('book', () => {
   // 书籍列表
@@ -15,6 +16,9 @@ export const bookStore = defineStore('book', () => {
   const currentBookType = ref('');
   const currentSearchKeyword = ref('');
   const isSearchMode = ref(false);
+
+  // 缓存store实例
+  const cache = cacheStore();
 
   // 获取所有书籍列表
   async function fetchBooks() {
@@ -90,6 +94,16 @@ export const bookStore = defineStore('book', () => {
   // 根据书籍类型获取书籍列表
   async function fetchBooksByType(bookType, page = 1, size = 20) {
     try {
+      // 如果是第一页，检查缓存
+      if (page === 1 && cache.hasCategoryCache(bookType)) {
+        console.log(`使用缓存数据 for ${bookType}`);
+        const cachedBooks = cache.getCachedBooks(bookType);
+        bookLists.value = [...cachedBooks];
+        currentPage.value = cache.getCategoryCache(bookType).currentPage;
+        hasMoreData.value = cache.getCategoryCache(bookType).hasMore;
+        return cachedBooks;
+      }
+
       const res = await bookApi.getBooksByType(bookType, page, size);
 
       // 判断返回的数据格式
@@ -100,9 +114,11 @@ export const bookStore = defineStore('book', () => {
         newBooks = res.data;
       }
 
-      // 如果是第一页，清空列表
+      // 如果是第一页，清空列表并缓存数据
       if (page === 1) {
         bookLists.value.length = 0;
+        // 缓存前40条数据
+        cache.setCategoryCache(bookType, newBooks, newBooks.length >= size, page);
       }
 
       // 添加新书籍
@@ -163,9 +179,14 @@ export const bookStore = defineStore('book', () => {
 
       if (newBooks.length < 20) {
         hasMoreData.value = false;
+        // 更新缓存的hasMore状态
+        cache.updateCacheHasMore(currentBookType.value, false);
       }
 
       currentPage.value = nextPage;
+      // 更新缓存的当前页码
+      cache.updateCacheCurrentPage(currentBookType.value, nextPage);
+
       return { success: true, hasMore: hasMoreData.value, books: newBooks };
     } catch (error) {
       console.error("Error loading more books:", error);
@@ -187,7 +208,10 @@ export const bookStore = defineStore('book', () => {
 
   // 设置当前书籍类型（用于懒加载）
   function setCurrentBookType(bookType) {
-    resetPagination();
+    // 如果切换到不同的分类，重置分页状态
+    if (currentBookType.value !== bookType) {
+      resetPagination();
+    }
     currentBookType.value = bookType;
     isSearchMode.value = false;
   }
@@ -222,5 +246,10 @@ export const bookStore = defineStore('book', () => {
     resetPagination,
     setCurrentBookType,
     setCurrentSearchKeyword,
+    // 缓存相关方法
+    clearCategoryCache: cache.clearCategoryCache,
+    clearAllCache: cache.clearAllCache,
+    getCacheStats: cache.getCacheStats,
+    hasCategoryCache: cache.hasCategoryCache,
   };
 });

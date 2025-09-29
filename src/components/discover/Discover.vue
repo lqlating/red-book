@@ -39,7 +39,12 @@ const {
   loadMoreArticles,
   setCurrentCategory,
   setCurrentSearchKeyword,
-  resetPagination
+  resetPagination,
+  hasCategoryCache,
+  hasSearchCache,
+  getCacheStats,
+  clearAllCache,
+  clearAllSearchCache
 } = articleStoreInstance;
 
 // 获取评论数据
@@ -56,6 +61,23 @@ const imageLoaded = ref({});
 const isInitialLoad = ref(true); // 用于标记第一次加载
 const currentTitleValue = ref('Romance'); // 当前激活的标题值，用于强制重新渲染
 const mainBodyRef = ref(null);
+
+// 调试相关
+const showDebug = ref(false);
+const cacheStats = ref({ categories: [] });
+
+// 更新缓存统计信息
+const updateCacheStats = () => {
+  cacheStats.value = getCacheStats();
+};
+
+// 清除所有缓存
+const clearAllCaches = () => {
+  clearAllCache();
+  clearAllSearchCache();
+  updateCacheStats();
+  console.log('已清除所有缓存');
+};
 
 // 标题数据
 const titleStoreInstance = titleStore();
@@ -150,19 +172,22 @@ const setActive = async (item, value) => {
   // 更新当前标题值用于强制刷新瀑布流组件
   currentTitleValue.value = value;
 
-  // 清空图片加载状态和数据
+  // 清空图片加载状态
   imageLoaded.value = {};
-  articleLists.value.length = 0;
-  filteredArticles.value.length = 0;
-
-  // 重置分页状态
-  resetPagination();
 
   // 根据搜索状态确定行为
   if (isSearch.value) {
     if (value === 'Articles') {
       searchArticle.value = true;
       setCurrentSearchKeyword(searchKeyword.value);
+      
+      // 检查搜索缓存
+      if (hasSearchCache(searchKeyword.value)) {
+        console.log(`使用搜索缓存数据 for ${searchKeyword.value}`);
+        updateCacheStats();
+        return;
+      }
+      
       if (userThing.value && userThing.value.id) {
         await searchArticleExcludeAuthor(searchKeyword.value, userThing.value.id);
       }
@@ -172,6 +197,18 @@ const setActive = async (item, value) => {
   } else {
     // 设置当前分类
     setCurrentCategory(value);
+    
+    // 检查分类缓存
+    if (hasCategoryCache(value)) {
+      console.log(`使用分类缓存数据 for ${value}`);
+      updateCacheStats();
+      return;
+    }
+    
+    // 清空数据
+    articleLists.value.length = 0;
+    filteredArticles.value.length = 0;
+    
     // 获取文章时排除当前用户的文章
     if (userThing.value && userThing.value.id) {
       await filterContentExcludeAuthor(value, userThing.value.id);
@@ -185,6 +222,9 @@ const setActive = async (item, value) => {
   listToUpdate.forEach(title => {
     title.isActive = title.title === item.title;
   });
+  
+  // 更新缓存统计信息
+  updateCacheStats();
 };
 
 // 确保文章数据加载完成的函数
@@ -281,6 +321,9 @@ onMounted(async () => {
   if (mainBodyRef.value) {
     mainBodyRef.value.addEventListener('scroll', handleScroll);
   }
+  
+  // 初始化缓存统计信息
+  updateCacheStats();
 });
 
 // 组件卸载时移除滚动监听
@@ -293,6 +336,33 @@ onUnmounted(() => {
 
 <template>
   <div class="Discover-wrapper">
+    <!-- 调试按钮 -->
+    <button class="debug-toggle" @click="showDebug = !showDebug">
+      {{ showDebug ? '隐藏调试' : '显示调试' }}
+    </button>
+    
+    <!-- 调试信息面板 -->
+    <div v-if="showDebug" class="debug-panel">
+      <h3>调试信息</h3>
+      <div class="debug-section">
+        <h4>缓存状态</h4>
+        <div v-for="category in cacheStats.categories" :key="category.categoryType" class="cache-item">
+          <strong>{{ category.categoryType }}:</strong>
+          <span>数据量: {{ category.dataCount }}, 页码: {{ category.currentPage }}, 有更多: {{ category.hasMore ? '是' : '否' }}</span>
+        </div>
+        <button @click="clearAllCaches" class="clear-cache-btn">清除所有缓存</button>
+      </div>
+      <div class="debug-section">
+        <h4>当前状态</h4>
+        <p>当前分类: {{ currentCategory }}</p>
+        <p>当前页码: {{ currentPage }}</p>
+        <p>有更多数据: {{ hasMoreData ? '是' : '否' }}</p>
+        <p>文章数量: {{ displayArticles.length }}</p>
+        <p>搜索模式: {{ isSearch ? '是' : '否' }}</p>
+        <p v-if="isSearch">搜索关键词: {{ searchKeyword }}</p>
+      </div>
+    </div>
+    
     <div class="title">
       <span v-for="item in (isSearch ? newTitleList : titleList)" :key="item.title"
         :class="{ 'title-inner': true, 'active': item.isActive }" @click="setActive(item, item.value)">
@@ -337,6 +407,71 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+/* 调试面板样式 */
+.debug-toggle {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.debug-panel {
+  position: fixed;
+  top: 50px;
+  right: 10px;
+  z-index: 1000;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  max-width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.debug-section {
+  margin-bottom: 16px;
+}
+
+.debug-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.cache-item {
+  margin-bottom: 4px;
+  font-size: 12px;
+  padding: 4px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.clear-cache-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.debug-section p {
+  margin: 4px 0;
+  font-size: 12px;
+  color: #666;
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.5s ease;
