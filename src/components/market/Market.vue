@@ -17,6 +17,14 @@
         <button @click="clearAllCache" class="clear-cache-btn">清除所有缓存</button>
       </div>
       <div class="debug-section">
+        <h4>卖家缓存状态</h4>
+        <div v-for="seller in sellerCacheStats.sellers" :key="seller.sellerId" class="cache-item">
+          <strong>ID {{ seller.sellerId }}:</strong>
+          <span>{{ seller.username }}, 过期: {{ seller.isExpired ? '是' : '否' }}</span>
+        </div>
+        <p>总卖家数: {{ sellerCacheStats.totalSellers }}</p>
+      </div>
+      <div class="debug-section">
         <h4>当前状态</h4>
         <p>当前分类: {{ currentBookType }}</p>
         <p>当前页码: {{ currentPage }}</p>
@@ -121,6 +129,7 @@ import { titleStore } from "../../store/title";
 import { bookStore } from "../../store/books";
 import { searchStore } from "../../store/search";
 import { userInfoStore } from "../../store/user";
+import { sellerCacheStore } from "../../store/sellerCache";
 
 // 选中的书籍
 const selectedBook = ref(null);
@@ -128,6 +137,9 @@ const selectedBook = ref(null);
 // 使用 userStore
 const userStore = userInfoStore();
 const { isLogin, showLogin } = storeToRefs(userStore);
+
+// 使用 sellerCacheStore
+const sellerCache = sellerCacheStore();
 
 // 打开书籍详情
 const openBookDetail = (book) => {
@@ -193,15 +205,18 @@ const scrollData = ref({
 
 // 缓存统计信息
 const cacheStats = ref({ categories: [] });
+const sellerCacheStats = ref({ sellers: [] });
 
 // 更新缓存统计信息
 const updateCacheStats = () => {
   cacheStats.value = getCacheStats();
+  sellerCacheStats.value = sellerCache.getCacheStats();
 };
 
 // 清除所有缓存
 const clearAllCache = () => {
   bookData.clearAllCache();
+  sellerCache.clearAllSellerCache();
   updateCacheStats();
   console.log('已清除所有缓存');
 };

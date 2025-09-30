@@ -101,6 +101,7 @@ import { ElDropdown, ElDropdownMenu, ElDropdownItem } from 'element-plus';
 import { MoreFilled } from '@element-plus/icons-vue';
 import ReportDialog from '../../report/ReportDialog.vue';
 import { messageStore } from "../../../store/message";
+import { sellerCacheStore } from "../../../store/sellerCache";
 
 // 默认书籍封面
 const defaultBookCover = '/src/assets/img/default-book-cover.jpg';
@@ -120,6 +121,7 @@ const user = userInfoStore();
 const cart = cartStore();
 const conversationStoreInstance = conversationStore();
 const messageStoreInstance = messageStore();
+const sellerCache = sellerCacheStore();
 
 const seller = ref(null);  // 卖家信息
 const isLoading = ref(true);  // 加载状态
@@ -226,10 +228,26 @@ const fetchSellerInfo = async () => {
     return;
   }
 
+  const sellerId = props.book.seller_id;
+  
+  // 检查缓存
+  if (sellerCache.hasSellerCache(sellerId)) {
+    console.log(`使用卖家缓存数据 for seller_id: ${sellerId}`);
+    seller.value = sellerCache.getCachedSeller(sellerId);
+    isLoading.value = false;
+    return;
+  }
+
   try {
-    const response = await userApi.SearchUserById(props.book.seller_id);
+    console.log(`从API获取卖家信息 for seller_id: ${sellerId}`);
+    const response = await userApi.SearchUserById(sellerId);
     if (response.data.code === 1 && response.data.data.length > 0) {
-      seller.value = response.data.data[0];
+      const sellerData = response.data.data[0];
+      seller.value = sellerData;
+      
+      // 缓存卖家信息
+      sellerCache.setSellerCache(sellerId, sellerData);
+      console.log(`卖家信息已缓存 for seller_id: ${sellerId}`);
     } else {
       throw new Error("未找到卖家信息");
     }
